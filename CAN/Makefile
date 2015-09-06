@@ -6,6 +6,11 @@ NODECLASS = org.xiaohuahua.can.Node
 JC = javac
 JFLAGS = -g -classpath $(SRC)
 
+RUNCOMD = java -Djava.security.policy=java.policy \
+		 -Djava.rmi.server.codebase=file:$(SRC) \
+		 -classpath $(SRC) \
+		 $(NODECLASS)
+
 .SUFFIXES: .java .class
 
 .java.class:
@@ -21,8 +26,8 @@ clean:
 backup:
 	tar -c -f src.tar src/*
 
-run: classes
-	java -Djava.security.policy=java.policy \
-		 -Djava.rmi.server.codebase=file:$(SRC) \
-		 -classpath $(SRC) \
-		 $(NODECLASS)
+run-node1: classes
+	$(RUNCOMD) node1
+
+run-node2: classes
+	$(RUNCOMD) node2

@@ -7,15 +7,12 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.Set;
-
 import org.xiaohuahua.can.util.HashUtil;
 
 public class Node implements RemoteNode {
 
   public Node(String id) {
-    this.id = id;
-    this.neighbors = new ArrayList<String>();
+    this.id = id;    
     this.zone = new Zone(0, 0, Config.LENGTH, Config.LENGTH);
   }
 
@@ -55,7 +52,7 @@ public class Node implements RemoteNode {
     Point p = HashUtil.getCoordinate(keyword);
 
     if (this.containsPoint(p)) {
-      this.files.add(keyword);
+      this.zone.addFile(keyword);
     } else {
       List<Node> nodes = this.getRoute(p);
       Node targetNode = nodes.get(nodes.size() - 1);
@@ -82,7 +79,7 @@ public class Node implements RemoteNode {
    */
   @Override
   public Boolean containsFile(String keyword) {
-    return this.files.contains(keyword);
+    return this.zone.contains(keyword);
   }
 
   /**
@@ -93,8 +90,9 @@ public class Node implements RemoteNode {
    */
   @Override
   public Boolean containsPoint(Point target) {
-    // TODO reimplement
-    return this.zone.contains(target);
+    return (target.x >= this.zone.x && target.y >= this.zone.y
+        && target.x < this.zone.x + this.zone.width
+        && target.y < this.zone.y + this.zone.height);
   }
 
   public String getId() {
@@ -144,16 +142,6 @@ public class Node implements RemoteNode {
    */
   private Zone zone;
 
-  /**
-   * Cached neighbor objects
-   */
-  private List<String> neighbors;
-
-  /**
-   * Files(keywords) managed by the node
-   */
-  private Set<String> files;
-
   private static void printHelp() {
     // TODO(zxi) print help
     System.err.println("Commands:");
@@ -172,6 +160,7 @@ public class Node implements RemoteNode {
       Registry registry = LocateRegistry.getRegistry();
       registry.rebind(name, stub);
       System.out.println("Node bound");
+      node.run();
     } catch (Exception e) {
       System.err.println("Node exception:");
       e.printStackTrace();
