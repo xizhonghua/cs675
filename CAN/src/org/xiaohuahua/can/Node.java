@@ -52,7 +52,8 @@ public class Node implements RemoteNode {
     Point p = HashUtil.getCoordinate(keyword);
 
     if (this.containsPoint(p)) {
-      this.zone.addFile(keyword);
+      //this.zone.addFile(keyword);
+      //TODO(zxi)
     } else {
       List<Node> nodes = this.getRoute(p);
       Node targetNode = nodes.get(nodes.size() - 1);
@@ -79,7 +80,8 @@ public class Node implements RemoteNode {
    */
   @Override
   public Boolean containsFile(String keyword) {
-    return this.zone.contains(keyword);
+    // return this.zone.contains(keyword);
+    return false;
   }
 
   /**

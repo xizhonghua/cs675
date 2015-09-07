@@ -18,9 +18,10 @@ public class Zone extends Rectangle {
   public Zone(int x, int y, int width, int height) {
     super(x, y, width, height);
     
-    this.files = new HashSet<>();
+    // this.files = new HashSet<>();
     this.neighbors = new HashSet<>();
   }
+
 
   /**
    * Check whether the zone contains the given point
@@ -30,9 +31,9 @@ public class Zone extends Rectangle {
         && point.x < this.x + this.width && point.y < this.y + this.height);
   }
   
-  public boolean contains(String keyword) {
-    return this.files.contains(keyword);
-  }
+//  public boolean contains(String keyword) {
+//    return this.files.contains(keyword);
+//  }
 
   /**
    * Split the zone
@@ -59,18 +60,18 @@ public class Zone extends Rectangle {
       this.setSize(w, h - sh);
     }
     
-    // Split files        
-    for(String file : this.files)
-    {
-      Point coord = HashUtil.getCoordinate(file);
-      if(newZone.contains(coord)) {
-        newZone.files.add(file);        
-      }     
-    }
-    
-    for(String file : newZone.files) {
-      this.files.remove(file);
-    }
+//    // Split files        
+//    for(String file : this.files)
+//    {
+//      Point coord = HashUtil.getCoordinate(file);
+//      if(newZone.contains(coord)) {
+//        newZone.files.add(file);        
+//      }     
+//    }
+//    
+//    for(String file : newZone.files) {
+//      this.files.remove(file);
+//    }
     
     // Split neighbors    
     
@@ -102,19 +103,17 @@ public class Zone extends Rectangle {
     // Merge zone
     this.setBounds(this.union(zone));
     
-    // Merge files
-    this.files.addAll(zone.files);
+//    // Merge files
+//    this.files.addAll(zone.files);
     
     // Merge neighbors
     this.neighbors.addAll(zone.neighbors);
   }
   
-  public void addFile(String keyword) {
-    this.files.add(keyword);
-  }
+//  public void addFile(String keyword) {
+//    this.files.add(keyword);
+//  }
   
-  private Set<String> files;
-  private Set<String> neighbors;
-
-  
+  // private Set<String> files;
+  private Set<Rectangle> neighbors;
 }
