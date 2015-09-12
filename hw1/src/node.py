@@ -4,6 +4,10 @@ from SocketServer import ThreadingMixIn
 import threading
 import urllib2
 import urlparse
+from util import hash{
+    "tab_size": 4,
+    "translate_tabs_to_spaces": false
+}
 
 
 class ThreadedHTTPServer(threading.Thread, ThreadingMixIn, HTTPServer):
