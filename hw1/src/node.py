@@ -74,10 +74,9 @@ class Handler(BaseHTTPRequestHandler):
     return
 
 
-class Node(threading.Thread):
+class Node():
 
   def __init__(self, id, ip, port, Hanlder):
-    threading.Thread.__init__(self)
     self.id = id
     self.ip = ip
     self.port = port
@@ -96,6 +95,9 @@ class Node(threading.Thread):
     print 'Joining...'
     self.server.start()
 
+  def leaveCAN(self):
+    pass
+
   def run(self):
     print 'Node started'
     while(True):
@@ -103,6 +105,8 @@ class Node(threading.Thread):
       print var
       if var == "join":
         self.joinCAN()
+      elif var == "leave":
+        pass
       elif var == "exit":
         self.server.stop()
         break
@@ -116,5 +120,4 @@ if __name__ == '__main__':
   port = 8080
 
   node = Node('1', 'localhost', 8080, Handler)
-  node.start()
-  node.join()
+  node.run()
