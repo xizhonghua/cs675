@@ -33,6 +33,11 @@ class ThreadedHTTPServer(threading.Thread, ThreadingMixIn, HTTPServer):
 
 class Handler(BaseHTTPRequestHandler):
 
+  def get_str(self, qs, key, default_val=None):
+    if key in qs:
+      return qs[key][0]
+    return default_val
+
   def do_GET(self):
 
     node = self.server.node
@@ -47,15 +52,18 @@ class Handler(BaseHTTPRequestHandler):
 
     message = threading.currentThread().getName()
 
-    peer = qs['peer'] if 'peer' in qs['peer'] else node.id
+    peer = self.get_str(qs, 'peer')
+    keyword = self.get_str(qs, 'keyword')
 
-    if url.path == "/query":
-      keyword = qs['keyword'] if 'keyword' in qs else None
-      json = node.query(keyword)
+    print 'peer=', peer
+    print 'keyword=', keyword
+
+    if url.path == "/search":
+      json = node.search(keyword)
     elif url.path == "/view":
       json = node.view()
-    else if url.path == "/insert":
-
+    elif url.path == "/insert":
+      pass
     else:
       message = '{"status": "error", "error_message": "unknown command"}'
 
@@ -76,8 +84,8 @@ class Node(threading.Thread):
     self.server = ThreadedHTTPServer((ip, port), Hanlder, self)
     self.daemon = True
 
-  def query(self, keyword):
-    print 'query id=', self.id, keyword
+  def search(self, keyword):
+    print 'query id=%s, keyword=%s' % (self.id, keyword)
     pass
 
   def view(self):
