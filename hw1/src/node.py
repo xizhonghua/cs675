@@ -3,9 +3,11 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from SocketServer import ThreadingMixIn
 import threading
 import urllib2
+import urllib
 import urlparse
 import sys
 import time
+import json
 from util import *
 from zone import *
 
@@ -37,7 +39,7 @@ class ThreadedHTTPServer(threading.Thread, ThreadingMixIn, HTTPServer):
 
 class Handler(BaseHTTPRequestHandler):
 
-  def get_str(self, qs, key, default_val=None):
+  def get_par(self, qs, key, default_val=None):
     if key in qs:
       return qs[key][0]
     return default_val
@@ -48,39 +50,50 @@ class Handler(BaseHTTPRequestHandler):
 
     print 'node.id = ', node.id
 
+    print 'request.path = ', self.path
+
     url = urlparse.urlparse(self.path)
     qs = urlparse.parse_qs(url.query)
 
-    print 'path = ', url.path
-    print 'querystring = ', qs
-
     message = threading.currentThread().getName()
 
-    peer = self.get_str(qs, 'peer')
-    keyword = self.get_str(qs, 'keyword')
+    peer = self.get_par(qs, 'peer')
+    keyword = self.get_par(qs, 'keyword')
 
-    x = int(self.get_str(qs, 'x', -1))
-    y = int(self.get_str(qs, 'y', -1))
+    x = int(self.get_par(qs, 'x', -1))
+    y = int(self.get_par(qs, 'y', -1))
     p = Point(x, y)
 
     in_zone = node.zone.contains(p)
+    closest_nb = node.get_closest_neighbor(p)
 
-    print 'peer=', peer
-    print 'keyword=', keyword
+    rsp = {}
 
     if url.path == "/":
-      message = '{"status": "ok", "data": "hello_world"}'
+      rsp = {"status": "ok", "data": "hello_world"}
     elif url.path == "/search":
-      json = node.search(keyword)
+      rsp = node.search(keyword)
     elif url.path == "/view":
-      json = node.view()
+      rsp = node.view()
     elif url.path == "/insert":
       pass
     elif url.path == "/join":
       if in_zone:
-        new_zone = node.zone
+        new_zone = node.zone.split()
+        rsp = {'new_zone': new_zone.__dict__}
+      else:
+        # forward the message
+        rsp = node.get(closest_nb, self.path)
     else:
-      message = '{"status": "error", "error_message": "unknown command"}'
+      rsp = {"status": "error", "error_message": "unknown command"}
+
+    if 'route' in rsp:
+      rsp['route'].append(node._get_address())
+    else:
+      rsp['route'] = [node._get_address()]
+
+    message = json.dumps(rsp)
+    print '[response] =', message
 
     self.send_response(200)
     self.end_headers()
@@ -100,7 +113,12 @@ class Node(threading.Thread):
     self.daemon = True
     self.server = None
 
-    # Assuming current node own the entire space
+    # Neighbors
+    #   key : address
+    #   value : Zone
+    self.neighbors = {}
+
+    # Assuming current node initially own the entire space
     self.zone = Zone(0, 0, ZONE_MAX_WIDTH, ZONE_MAX_HEIGHT)
 
     # A CAN node in the system [(ip, port)]
@@ -112,15 +130,42 @@ class Node(threading.Thread):
     d['ip'] = self.ip
     d['port'] = self.port
     d['zone'] = str(self.zone)
+    d['bootstrap'] = self.bootstrap
     return str(d)
 
+  def _get_address(self):
+    return self.ip + ':' + str(self.port)
+
   '''
-  Call REST API at http://address/path and get result
+  Get the closest neighbors for a given target point
   '''
 
-  def get(self, address, path):
-    return urllib2.urlopen(
-        "http://%s:%s%s" % (address[0], address[1], path)).read()
+  def get_closest_neighbor(self, point):
+    min_dist = 65535
+    closest_nb = None
+
+    for nb in self.neighbors:
+      nb_zone = self.neighbors[nb]
+      dist = nb_zone.dist(point)
+      if dist < min_dist:
+        closest_nb = nb
+        min_dist = dist
+
+    return closest_nb
+
+  '''
+  Call REST API at http://address/path?k1=v1&k2=v2... and get result
+  '''
+
+  def get(self, address, path, kv=None):
+    if kv is not None:
+      qs = urllib.urlencode(kv)
+      path = path + '?' + qs
+
+    response = urllib2.urlopen(
+        "http://%s%s" % (address, path))
+    data = json.load(response)
+    return data
 
   def search(self, keyword):
     print 'query id=%s, keyword=%s' % (self.id, keyword)
@@ -143,8 +188,14 @@ class Node(threading.Thread):
     if self.bootstrap is None:
       pass
     else:
-      # TODO(zxi)
-      pass
+      pars = {
+          'x': p.x,
+          'y': p.y,
+          'peer': self.id,
+          'address': self._get_address()}
+      # Call REST API
+      rsp = self.get(self.bootstrap, '/join', pars)
+      print rsp
 
     print 'Joined!'
     self.view()
@@ -158,11 +209,14 @@ class Node(threading.Thread):
 
   def run(self):
     print 'Node started'
+    self.joinCAN()
+
     while(True):
       var = raw_input("")
       print var
       if var == "join":
-        self.joinCAN()
+        # self.joinCAN()
+        pass
       elif var == "view":
         self.view()
       elif var == "leave":
@@ -171,7 +225,7 @@ class Node(threading.Thread):
         self.stop()
         break
       elif var == "test":
-        print self.get(self.address, '/')
+        print self.get(self._get_address(), '/', {'k1': 'v1', 'k2': 'v2', 'foo': 'bar'})
     print 'Node stopped'
 
 

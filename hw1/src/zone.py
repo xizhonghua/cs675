@@ -1,7 +1,7 @@
 from point import *
 
 
-class Zone():
+class Zone(object):
 
   def __init__(self, x, y, width, height):
     self.x = x
@@ -23,6 +23,19 @@ class Zone():
             or point.x < self.x or point.y < self.y:
       return False
     return True
+
+  '''
+  Compute the distance to a point
+  '''
+
+  def dist(self, point):
+    if self.contains(point):
+      return 0
+
+    dx = point.x - self.x + self.width / 2
+    dy = point.y - self.y + self.height / 2
+
+    return dx ** 2 + dy ** 2
 
   def is_square(self):
     return self.width == self.height
@@ -65,7 +78,8 @@ class Zone():
 
 if __name__ == '__main__':
   zone = Zone(0, 0, 10, 10)
-  print 'zone:', zone
+  print 'zone =', zone
+  print 'zone.__dict__ =', zone.__dict__
   p1 = Point(1, 1)
   print 'p1 =', p1, 'zone.contains(p1) =', zone.contains(p1)
   p2 = Point(10, 3)
