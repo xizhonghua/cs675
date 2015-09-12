@@ -4,10 +4,10 @@ from SocketServer import ThreadingMixIn
 import threading
 import urllib2
 import urlparse
-from util import hash{
-    "tab_size": 4,
-    "translate_tabs_to_spaces": false
-}
+import sys
+import time
+from util import *
+from zone import *
 
 
 class ThreadedHTTPServer(threading.Thread, ThreadingMixIn, HTTPServer):
@@ -59,15 +59,26 @@ class Handler(BaseHTTPRequestHandler):
     peer = self.get_str(qs, 'peer')
     keyword = self.get_str(qs, 'keyword')
 
+    x = int(self.get_str(qs, 'x', -1))
+    y = int(self.get_str(qs, 'y', -1))
+    p = Point(x, y)
+
+    in_zone = node.zone.contains(p)
+
     print 'peer=', peer
     print 'keyword=', keyword
 
-    if url.path == "/search":
+    if url.path == "/":
+      message = '{"status": "ok", "data": "hello_world"}'
+    elif url.path == "/search":
       json = node.search(keyword)
     elif url.path == "/view":
       json = node.view()
     elif url.path == "/insert":
       pass
+    elif url.path == "/join":
+      if in_zone:
+        new_zone = node.zone
     else:
       message = '{"status": "error", "error_message": "unknown command"}'
 
@@ -78,26 +89,69 @@ class Handler(BaseHTTPRequestHandler):
     return
 
 
-class Node():
+class Node(threading.Thread):
 
-  def __init__(self, id, ip, port, Hanlder):
+  def __init__(self, id, ip, port, bootstrap):
+    threading.Thread.__init__(self)
     self.id = id
     self.ip = ip
     self.port = port
-    self.server = ThreadedHTTPServer((ip, port), Hanlder, self)
+    self.address = (ip, port)
     self.daemon = True
+    self.server = None
+
+    # Assuming current node own the entire space
+    self.zone = Zone(0, 0, ZONE_MAX_WIDTH, ZONE_MAX_HEIGHT)
+
+    # A CAN node in the system [(ip, port)]
+    self.bootstrap = bootstrap
+
+  def __str__(self):
+    d = {}
+    d['id'] = self.id
+    d['ip'] = self.ip
+    d['port'] = self.port
+    d['zone'] = str(self.zone)
+    return str(d)
+
+  '''
+  Call REST API at http://address/path and get result
+  '''
+
+  def get(self, address, path):
+    return urllib2.urlopen(
+        "http://%s:%s%s" % (address[0], address[1], path)).read()
 
   def search(self, keyword):
     print 'query id=%s, keyword=%s' % (self.id, keyword)
-    pass
 
   def view(self):
-    print 'view id=', self.id
-    pass
+    print '[View]', self
 
   def joinCAN(self):
-    print 'Joining...'
+    print 'Joining CAN...'
+    p = random_point()
+    print 'Random point picked =', p
+
+    self.server = ThreadedHTTPServer((self.ip, self.port), Handler, self)
     self.server.start()
+
+    # Wait the HTTPServer start
+    while not self.server.started:
+      time.sleep(0.2)
+
+    if self.bootstrap is None:
+      pass
+    else:
+      # TODO(zxi)
+      pass
+
+    print 'Joined!'
+    self.view()
+
+  def stop(self):
+    if self.server is not None:
+      self.server.stop()
 
   def leaveCAN(self):
     pass
@@ -109,19 +163,29 @@ class Node():
       print var
       if var == "join":
         self.joinCAN()
+      elif var == "view":
+        self.view()
       elif var == "leave":
         pass
       elif var == "exit":
-        self.server.stop()
+        self.stop()
         break
       elif var == "test":
-        for i in range(1, 10):
-          print self.server.get_index()
+        print self.get(self.address, '/')
+    print 'Node stopped'
 
 
 if __name__ == '__main__':
-  ip = 'localhost'
-  port = 8080
+  if len(sys.argv) <= 2:
+    print 'Usage: %s peer_id port [bootstrap]' % sys.argv[0]
+  else:
+    peer_id = sys.argv[1]
+    port = int(sys.argv[2])
 
-  node = Node('1', 'localhost', 8080, Handler)
-  node.run()
+    bootstrap = None
+    if len(sys.argv) > 3:
+      bootstrap = sys.argv[3]
+
+    node = Node(peer_id, '127.0.0.1', port, bootstrap)
+    node.start()
+    node.join()
