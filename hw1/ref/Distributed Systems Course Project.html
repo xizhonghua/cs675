@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//w3c//dtd html 4.0 transitional//en">
+<!-- saved from url=(0071)https://cs.gmu.edu/~sqchen/courses/CS675F15/projects-new/project_1.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  
+  <meta name="GENERATOR" content="Mozilla/4.7 [en] (X11; I; SunOS 5.7 sun4u) [Ne
+    tscape]">
+  <title>Distributed Systems Course Project</title>
+</head>
+<body bgcolor="#FFFFFF">
+<center>
+  <h2>
+   Distributed Systems Course Project: P2P Architecture
+  </h2>
+</center>
+
+<center><h2>
+Building Content-Addressable Network (CAN)
+</h2></center>
+
+
+<table cellspacing="0" cellpadding="4" width="100%" border="0">
+  <tbody><tr bgcolor="#afff00">
+    <td class="part" width="100%">
+      <font face="Arial" size="3">
+      <a name="summary">Overview</a>
+      </font>
+    </td>
+  </tr>
+</tbody></table>
+<p>
+
+</p><p>
+A Distributed Hash Table (DHT) helps searching for
+a file efficiently with a keyword in peer-to-peer (p2p) networks. Those
+DHT-based p2p networks are referred to as structured p2p networks. On 
+the contrary, unstructured p2p networks use flooding or a central server
+for search. Structured p2p networks offer more scalable, efficient,
+and robust search and management. CAN, Pastry, and Chord are a few
+examples of the structured p2p networks. You will implement
+a CAN p2p system in this project. For implementation, you are free to use 
+one of Java, C or C++, and any networking techniques including
+sockets, RPC and RMI.
+<br><br>
+
+<table cellspacing="0" cellpadding="4" width="100%" border="0">
+  <tbody><tr bgcolor="#afff00">
+    <td class="part" width="100%">
+      <font face="Arial" size="3">
+      <a name="summary1">Background</a>
+      </font>
+    </td>
+  </tr>
+</tbody></table>
+</p><p>
+
+The paper below describes the details of the CAN protocol. You should
+first read the paper VERY carefully, and understand it completely.
+Feel free to read any related documents (except its implemented program). 
+You can find the paper easily through Google. You can also download
+the paper by clicking on the title below. 
+
+</p><ul>
+<li>S. Ratnasamy, P. Francis, M. Handley, R. Karp, and S. Shenker, 
+<a href="http://conferences.sigcomm.org/sigcomm/2001/p13-ratnasamy.pdf">
+A Scalable Content-Addressable Network,"</a>
+In Proceedings of ACM SIGCOMM, August 2001.<br>
+</li></ul>
+
+After reading the paper, you should be able to answer the following
+questions:
+<ol>
+<li> How does a node insert and retrieve a file with a keyword?
+</li><li> How is a search query routed from source to destination?
+</li><li> How does a new peer join CAN? Specifically, how does CAN compute 
+the zone of the new peer? Who are the neighbors of the new peer?
+</li><li> How does a peer leave CAN? Specifically, how is CAN reorganized
+after node departures?
+</li></ol>
+You need to focus on Section 2 and Figures 1-3 to answer these questions.
+For simplicity, you assume that nodes and networks do not fail; hence,
+you do not need to implement the CAN recovery mechanism.
+<p>
+
+<table cellspacing="0" cellpadding="4" width="100%" border="0">
+  <tbody><tr bgcolor="#afff00">
+    <td class="part" width="100%">
+      <font face="Arial" size="3">
+      <a name="summary2">What to do</a>
+      </font>
+    </td>
+  </tr>
+</tbody></table>
+</p><p>
+
+Your program is to support <b>the four main features: 1)</b> the file insert
+and retrieve algorithm, <b>2)</b> the routing mechanism, <b>3)</b> the node join and
+leave protocol, and <b>4)</b> displaying peer information. Of course, you are
+always welcome to add more functionalities either explained in the paper
+or your own ideas. In such a case, be sure to specify clearly in your README. Additionally, one peer needs
+to be designated as the bootstrapping server that helps a new node join
+the CAN network successfully. As discussed in the paper, the server
+randomly chooses the coordinate of the new node and routes a join request
+to this target peer. A new node can use any
+active peer as the bootstrapping server. <br><br>
+
+You will use a two-dimensional coordinate space (like a square) for this 
+project. The side-length of this square is 10, and the number of peers
+in the experiment is no greater than 10. To determine a mapping point
+in the coordinate space, you will use a simple modulo-based hash function.
+Specifically, the x-coordinate of a keyword (a string) is computed as
+<i>CharAtOdd mod 10</i>, where <i>CharAtOdd</i> is the addition of the 
+character values at odd positions. The y-coordinate of the keyword is
+computed similarly, which is <i>CharAtEven mod 10</i> where <i>ChatAtEven</i>
+is the addition of the character values at even positions. Note that
+a floating-point number can be used for the coordinates for accurate
+zone splitting. Assume that keywords have at least 5 characters.
+<br><br>
+
+When a node joins, if its zone is a square, then split the zone vertically
+(this will give the node a rectangle zone). If the zone is a rectangle
+with height greater than width, split the zone horizontally (this will
+give the node a square zone). When a node leaves, search its neighbors
+and merge its zone with a neighbor zone if that merge creates a
+rectangle or square zone. Otherwise, the neighbor with the smallest
+zone owns the zone of the departing node temporarily.
+<br><br>
+
+Once your CAN has started correctly, your program is to accept the
+commands listed below:<br><br>
+<table border="">
+  <tbody><tr>
+    <th>Command</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td><code>insert <i>keyword</i> </code></td>
+    <td>Insert a file with <i>keyword</i> starting from <i>peer</i>,
+    where <i>peer</i> is a node identifier, not an IP address. 
+    After a successful insertion, display which peer stores the file and
+    the route at the IP layer from <i>peer</i> to the destination peer. 
+    If the insertion fails, display "Failure".</td>
+  </tr>
+  <tr>
+    <td><code>search <i>keyword</i> </code></td>
+    <td>Search for a file with <i>keyword</i> starting from <i>peer</i>,
+    where <i>peer</i> is a node identifier, not an IP address. 
+    After a successful search, display which peer stores the file and
+    the route at the IP layer from <i>peer</i> to the destination peer.
+    If the search fails, display "Failure".</td>
+  </tr>
+  <tr>
+    <td><code>view </code></td>
+    <td>Display the information of a specified peer <i>peer</i> where
+    <i>peer</i> is a node identifier, not an IP address. The information 
+    includes the node identifier, the IP address, the coordinate, a list
+    of neighbors, and the data items currently stored at the peer.
+    If no <i>peer</i> is given, display the information of all currently
+    active peers.</td>
+  </tr>
+  <tr>
+    <td><code>join </code></td>
+    <td>A new node <i>peer</i> joins the CAN network. After a successful
+    join, display the peer information (see view <i>peer</i>).
+    If the join fails, display "Failure".
+    If no <i>peer</i> is given, all the hosts join the CAN one after another.</td>
+  </tr>
+  <tr>
+    <td><code>leave </code></td>
+    <td>A node <i>peer</i> leaves the CAN network. After a successful leave,
+    display the information at affected peers (neighbors). If the leave
+    If the leave fails, display "Failure".</td>
+  </tr>
+</tbody></table>
+
+All the error cases and exceptions should be handled properly. This means
+your system should not crash abruptly. As long as
+the minimum requirements (the four main features) are met, the project
+specifications can be flexible. New ideas, possible extensions, and other
+suggestions are always welcome. 
+<br><br>
+
+<table cellspacing="0" cellpadding="4" width="100%" border="0">
+  <tbody><tr bgcolor="#afff00">
+    <td class="part" width="100%">
+      <font face="Arial" size="3">
+      <a name="summary4">What to submit</a>
+      </font>
+    </td>
+  </tr>
+</tbody></table>
+</p><p>
+
+</p><ul>
+  <li>Your report about your design/implementation choices.</li>
+   <li>A tar ball, including the report, your source code, a README file with
+  intructions on how to compile and run your code, and the test programs.</li>
+    <li>Put all above files into a directory, compress and email to
+  the instructor.</li>
+</ul>
+
+
+
+
+</body></html>
