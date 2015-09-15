@@ -238,6 +238,8 @@ class Node(threading.Thread):
       # Call REST API
       rsp = self.get(self.bootstrap, '/join', pars)
       print rsp
+      self.zone = rsp['new_zone']
+      self.files = rsp['new_files']
 
     print 'Joined!'
     self.view()
