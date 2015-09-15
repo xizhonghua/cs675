@@ -93,15 +93,9 @@ class Zone(object):
   '''
 
   def _edge_overlap(self, edge1, edge2):
-    # a, b = edge1
-    # c, d = edge2
+
     inter_len = self._edge_intersect_len(edge1, edge2)
-    # print a, b, c, d, inter_len
     return inter_len > 0
-    # ( self._point_in_edge(edge1, c) \
-    # or self._point_in_edge(edge1, d) \
-    # or self._point_in_edge(edge2, a) \
-    # or self._point_in_edge(edge2, b) )
 
   def _edge_intersect_len(self, edge1, edge2):
     a, b = edge1
@@ -119,25 +113,6 @@ class Zone(object):
       return ty - sy
 
     return 0
-
-  '''
-  Check whether a point in edge
-  '''
-
-  def _point_in_edge(self, edge, p):
-    a, b = edge
-
-    # horizontal
-    if a.y == b.y and a.y == p.y:
-      if p.x >= a.x and p.x <= b.x:
-        return True
-
-    # vertical
-    if a.x == b.x and a.x == p.x:
-      if p.y >= a.y and p.y <= b.y:
-        return True
-
-    return False
 
   '''
   Split the zone to half.

@@ -47,70 +47,100 @@ class Handler(BaseHTTPRequestHandler):
       return qs[key][0]
     return default_val
 
+  def handle_view(self):
+    self.rsp = self.node.view()
+
+  def handle_join(self):
+    if not self.in_zone:
+      return
+
+    new_zone, new_files, new_neighbors = self.node.split(
+        self.peer, self.source)
+
+    self.rsp = {
+        'new_zone': new_zone.__dict__,
+        'new_files': new_files,
+        'new_neighbors': new_neighbors}
+
+  def handle_insert(self):
+    if not self.in_zone:
+      return
+
+    self.node.addFile(self.keyword, self.content)
+    self.rsp = {'result': 'success',
+                'keyword': self.keyword,
+                'content': self.content
+                }
+
+  def handle_search(self):
+    pass
+
+  def handle_view(self):
+    self.rsp = self.node.view()
+
+  def handle_add_neighbor(self):
+    self.rsp = {'result': 'success'}
+    neighbor = json.load(self.neighbor)
+    self.node.add_neighbor(neighbor)
+
   def do_GET(self):
 
-    node = self.server.node
+    node = self.node = self.server.node
 
     url = urlparse.urlparse(self.path)
     qs = urlparse.parse_qs(url.query)
 
     message = threading.currentThread().getName()
 
-    peer = self.get_par(qs, 'peer')
-    source = self.get_par(qs, 'source')
-    keyword = self.get_par(qs, 'keyword')
-    content = self.get_par(qs, 'content')
+    self.peer = self.get_par(qs, 'peer')
+    self.source = self.get_par(qs, 'source')
+    self.keyword = self.get_par(qs, 'keyword')
+    self.content = self.get_par(qs, 'content')
+    self.neighbor = self.get_par(qs, 'neighbor')
 
-    x = int(self.get_par(qs, 'x', -1))
-    y = int(self.get_par(qs, 'y', -1))
-    p = Point(x, y)
+    self.x = int(self.get_par(qs, 'x', -1))
+    self.y = int(self.get_par(qs, 'y', -1))
+    self.p = Point(self.x, self.y)
 
-    in_zone = node.zone.contains(p)
-    closest_nb = node.get_closest_neighbor(p)
+    self.in_zone = node.zone.contains(self.p)
+    self.closest_nb = node.get_closest_neighbor(self.p)
 
     # if p is not in zone forward the message to the closest neighbor
-    is_forward_message = True
+    self.is_forward_message = True
 
-    rsp = {}
+    self.rsp = {}
 
     print '[REST][Server] Request =', self.path
 
     if url.path == "/":
+      self.is_forward_message = False
       rsp = {"status": "ok", "data": "hello_world"}
     elif url.path == "/search":
-      rsp = node.search(keyword)
+      self.handle_search()
     elif url.path == "/view":
-      rsp = node.view()
+      self.handle_view()
     elif url.path == "/insert":
-      if in_zone:
-        node.addFile(keyword, content)
-        rsp = {'result': 'success',
-               'keyword': keyword,
-               'content': content
-               }
+      self.handle_insert()
     elif url.path == "/join":
-      if in_zone:
-        new_zone, new_files, new_neighbors = node.split(peer, source)
-        rsp = {
-            'new_zone': new_zone.__dict__,
-            'new_files': new_files,
-            'new_neighbors': new_neighbors}
+      self.handle_join()
+    elif url.path == "/add-neighbor":
+      self.handle_add_neighbor()
     else:
       # Unknown command, do not forward message
-      is_forward_message = False
-      rsp = {"status": "error", "error_message": "unknown command"}
+      self.is_forward_message = False
+      self.rsp = {"status": "error", "error_message": "unknown command"}
 
-    if not in_zone and is_forward_message:
+    if not self.in_zone and self.is_forward_message:
       # forward the message
-      rsp = node.call(closest_nb, self.path)
+      self.rsp = node.call(self.closest_nb, self.path)
 
     # append current node's address to route list
-    if 'route' in rsp:
-      rsp['route'].append(node.get_address())
+    if 'route' in self.rsp:
+      self.rsp['route'].append(node.get_address())
     else:
-      rsp['route'] = [node.get_address()]
+      self.rsp['route'] = [node.get_address()]
 
-    message = json.dumps(rsp)
+    message = json.dumps(self.rsp)
     print '[REST][Server] Response =', message
 
     self.send_response(200)
@@ -236,25 +266,34 @@ class Node(threading.Thread):
 
     # Update neighbor info
 
-    self.neighbors[source] = {
+    new_node = {
         'id': peer,
         'address': source,
-        'zone': new_zone}
+        'zone': new_zone
+    }
 
     new_neighbors = {}
 
     new_neighbors[self.get_address()] = self.as_neighbor()
 
-    # rsp = {'new_zone': new_zone.__dict__}
-    # TODO(zxi)
     # notify neighbors
 
-    print 'Split!'
+    for address in self.neighbors:
+      neighbor = self.neighbors[address]
+      if neighbor['zone'].is_neightbor(new_zone):
+        new_neighbors[address] = neighbor
+
+        pars = self.build_request_paras(neighbor=new_node)
+        self.call(address, "/add-neighbor", pars)
+
+    self.neighbors[source] = new_node
+
     self.view()
 
     return new_zone, new_files, new_neighbors
 
-  def buildQuestParameters(self, p=None, keyword=None, content=None):
+  def build_request_paras(
+          self, p=None, keyword=None, content=None, neighbor=None):
     pars = {
         'peer': self.id,
         'source': self.get_address()}
@@ -265,9 +304,11 @@ class Node(threading.Thread):
       pars['keyword'] = keyword
     if content is not None:
       pars['content'] = content
+    if neighbor is not None:
+      pars['neighbor'] = neighbor
     return pars
 
-  def joinCAN(self):
+  def join_CAN(self):
 
     self.server = ThreadedHTTPServer((self.ip, self.port), Handler, self)
     self.server.start()
@@ -283,7 +324,7 @@ class Node(threading.Thread):
     if self.bootstrap is None:
       pass
     else:
-      pars = self.buildQuestParameters(p)
+      pars = self.build_request_paras(p)
       rsp = self.call(self.bootstrap, '/join', pars)
 
       # update node info
@@ -293,12 +334,12 @@ class Node(threading.Thread):
       new_neighbors = rsp['new_neighbors']
 
       for address in new_neighbors:
-        self.addNeighbor(new_neighbors[address])
+        self.add_neighbor(new_neighbors[address])
 
     print 'Joined!'
     self.view()
 
-  def addNeighbor(self, neighbor):
+  def add_neighbor(self, neighbor):
     neighbor['zone'] = Zone().setFromDict(neighbor['zone'])
     self.neighbors[neighbor['address']] = neighbor
 
@@ -313,7 +354,7 @@ class Node(threading.Thread):
       self.view()
     else:
       address = self.get_closest_neighbor(p)
-      pars = self.buildQuestParameters(p, keyword=keyword, content=content)
+      pars = self.build_request_paras(p, keyword=keyword, content=content)
       rsp = self.call(address, '/insert', pars)
     pass
 
@@ -332,14 +373,14 @@ class Node(threading.Thread):
 
   def run(self):
     print 'Node started'
-    self.joinCAN()
+    self.join_CAN()
 
     while(True):
       items = raw_input("").split(' ')
       cmd = items[0]
       # print cmd
       if cmd == "join":
-        # self.joinCAN()
+        # self.join_CAN()
         pass
       elif cmd == "insert":
         if len(items) < 3:
