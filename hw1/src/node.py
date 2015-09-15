@@ -66,14 +66,22 @@ class Handler(BaseHTTPRequestHandler):
     if not self.in_zone:
       return
 
-    self.node.addFile(self.keyword, self.content)
+    self.node.add_file(self.keyword, self.content)
     self.rsp = {'result': 'success',
                 'keyword': self.keyword,
                 'content': self.content
                 }
 
   def handle_search(self):
-    pass
+    if not self.in_zone:
+      return
+
+    files = self.node.files[
+        self.keyword] if self.keyword in self.node.files else {}
+
+    self.rsp = {'result': 'success',
+                'keyword': self.keyword,
+                'contents': files}
 
   def handle_view(self):
     self.rsp = self.node.view()
@@ -344,13 +352,29 @@ class Node(threading.Thread):
     self.neighbors[neighbor['address']] = neighbor
 
   '''
+  Search for a keyword
+  '''
+
+  def search_file(self, keyword):
+    p = hash(keyword)
+    contents = []
+    if self.zone.contains(p) and keyword in self.files:
+      contents = self.files[keyword]
+    else:
+      address = self.get_closest_neighbor(p)
+      pars = self.build_request_paras(p, keyword=keyword)
+      rsp = self.call(address, '/search', pars)
+      contents = rsp['contents']  # TODO(zxi) fix me
+    print '[Search] keyword = "%s" contents = "%s"' % (keyword, contents)
+
+  '''
   Insert the keyword and content into CAN
   '''
 
-  def insertFile(self, keyword, content):
+  def insert_file(self, keyword, content):
     p = hash(keyword)
     if self.zone.contains(p):
-      self.addFile(keyword, content)
+      self.add_file(keyword, content)
       self.view()
     else:
       address = self.get_closest_neighbor(p)
@@ -358,7 +382,7 @@ class Node(threading.Thread):
       rsp = self.call(address, '/insert', pars)
     pass
 
-  def addFile(self, keyword, content):
+  def add_file(self, keyword, content):
     if keyword in self.files:
       self.files[keyword].append(content)
     else:
@@ -368,34 +392,47 @@ class Node(threading.Thread):
     if self.server is not None:
       self.server.stop()
 
-  def leaveCAN(self):
+  def leave_CAN(self):
     pass
+
+  def invoke_cmd(self, cmd, args):
+    # print cmd
+    if cmd == "join":
+      # self.join_CAN()
+      pass
+    elif cmd == "insert":
+      if len(args) < 2:
+        print "insert keyword content"
+      else:
+        self.insert_file(args[0], args[1])
+    elif cmd == "search":
+      if len(args) == 0:
+        print "search keyword"
+      else:
+        self.search_file(args[0])
+    elif cmd == "view":
+      self.view()
+    elif cmd == "leave":
+      pass
+    elif cmd == "exit":
+      self.stop()
+      return False
+    elif cmd == "test":
+      print self.call(self.get_address(), '/', {'k1': 'v1', 'k2': 'v2', 'foo': 'bar'})
+
+    return True
 
   def run(self):
     print 'Node started'
     self.join_CAN()
 
     while(True):
-      items = raw_input("").split(' ')
-      cmd = items[0]
-      # print cmd
-      if cmd == "join":
-        # self.join_CAN()
-        pass
-      elif cmd == "insert":
-        if len(items) < 3:
-          print "insert keyword content"
-        else:
-          self.insertFile(items[1], items[2])
-      elif cmd == "view":
-        self.view()
-      elif cmd == "leave":
-        pass
-      elif cmd == "exit":
-        self.stop()
+      args = raw_input("").split(' ')
+      cmd = args[0]
+      args.pop(0)
+      if not self.invoke_cmd(cmd, args):
         break
-      elif cmd == "test":
-        print self.get(self.get_address(), '/', {'k1': 'v1', 'k2': 'v2', 'foo': 'bar'})
+
     print 'Node stopped'
 
 
