@@ -69,7 +69,7 @@ class Handler(BaseHTTPRequestHandler):
 
     rsp = {}
 
-    print '[REST Call]', self.path
+    print '[REST][Server] Request =', self.path
 
     if url.path == "/":
       rsp = {"status": "ok", "data": "hello_world"}
@@ -99,7 +99,7 @@ class Handler(BaseHTTPRequestHandler):
       rsp['route'] = [node.get_address()]
 
     message = json.dumps(rsp)
-    # print '[response] =', message
+    print '[REST][Server] Response =', message
 
     self.send_response(200)
     self.end_headers()
@@ -172,14 +172,18 @@ class Node(threading.Thread):
   Call REST API at http://address/path?k1=v1&k2=v2... and get result
   '''
 
-  def get(self, address, path, kv=None):
+  def call(self, address, path, kv=None):
     if kv is not None:
       qs = urllib.urlencode(kv)
       path = path + '?' + qs
 
-    response = urllib2.urlopen(
-        "http://%s%s" % (address, path))
+    url = "http://%s%s" % (address, path)
+    response = urllib2.urlopen(url)
     data = json.load(response)
+
+    print '[REST][Client] Request =', url
+    print '[REST][Client] Response =', data
+
     return data
 
   def search(self, keyword):
@@ -238,6 +242,19 @@ class Node(threading.Thread):
 
     return new_zone, new_files, new_neighbors
 
+  def buildQuestParameters(self, p=None, keyword=None, content=None):
+    pars = {
+        'peer': self.id,
+        'source': self.get_address()}
+    if p is not None:
+      pars['x'] = p.x
+      pars['y'] = p.y
+    if keyword is not None:
+      pars['keyword'] = keyword
+    if content is not None:
+      pars['content'] = content
+    return pars
+
   def joinCAN(self):
 
     self.server = ThreadedHTTPServer((self.ip, self.port), Handler, self)
@@ -254,19 +271,35 @@ class Node(threading.Thread):
     if self.bootstrap is None:
       pass
     else:
-      pars = {
-          'x': p.x,
-          'y': p.y,
-          'peer': self.id,
-          'source': self.get_address()}
-      # Call REST API
-      rsp = self.get(self.bootstrap, '/join', pars)
+      pars = self.buildQuestParameters(p)
+      rsp = self.call(self.bootstrap, '/join', pars)
       self.zone = rsp['new_zone']
       self.files = rsp['new_files']
       self.neighbors = rsp['new_neighbors']
 
     print 'Joined!'
     self.view()
+
+  '''
+  Insert the keyword and content into CAN
+  '''
+
+  def insertFile(self, keyword, content):
+    p = hash(keyword)
+    if self.zone.contains(p):
+      self.addFile(keyword, content)
+      self.view()
+    else:
+      address = self.get_closest_neighbor(p)
+      pars = self.buildQuestParameters(p, keyword=keyword, content=content)
+      rsp = self.call(address, '/insert', pars)
+    pass
+
+  def addFile(self, keyword, content):
+    if keyword in self.files:
+      self.files[keyword].append(content)
+    else:
+      self.files[keyword] = [content]
 
   def stop(self):
     if self.server is not None:
@@ -280,19 +313,25 @@ class Node(threading.Thread):
     self.joinCAN()
 
     while(True):
-      var = raw_input("")
-      print var
-      if var == "join":
+      items = raw_input("").split(' ')
+      cmd = items[0]
+      # print cmd
+      if cmd == "join":
         # self.joinCAN()
         pass
-      elif var == "view":
+      elif cmd == "insert":
+        if len(items) < 3:
+          print "insert keyword content"
+        else:
+          self.insertFile(items[1], items[2])
+      elif cmd == "view":
         self.view()
-      elif var == "leave":
+      elif cmd == "leave":
         pass
-      elif var == "exit":
+      elif cmd == "exit":
         self.stop()
         break
-      elif var == "test":
+      elif cmd == "test":
         print self.get(self.get_address(), '/', {'k1': 'v1', 'k2': 'v2', 'foo': 'bar'})
     print 'Node stopped'
 
