@@ -3,15 +3,29 @@ from point import *
 
 class Zone(object):
 
-  def __init__(self, x, y, width, height):
+  def __init__(self, x=0, y=0, width=0, height=0):
     self.x = x
     self.y = y
     self.width = width
     self.height = height
 
+  def __repr__(self):
+    return self.__str__()
+
   def __str__(self):
     return str(self.x) + ', ' + str(self.y) + ', ' + \
         str(self.width) + ', ' + str(self.height)
+
+  def set(self, x, y, width, height):
+    self.__init__(x, y, width, height)
+    return self
+
+  def setFromDict(self, zone):
+    self.set(int(zone['x']),
+             int(zone['y']),
+             int(zone['width']),
+             int(zone['height']))
+    return self
 
   def clone(self):
     return Zone(self.x, self.y, self.width, self.height)

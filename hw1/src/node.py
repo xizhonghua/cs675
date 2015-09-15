@@ -59,6 +59,7 @@ class Handler(BaseHTTPRequestHandler):
     peer = self.get_par(qs, 'peer')
     source = self.get_par(qs, 'source')
     keyword = self.get_par(qs, 'keyword')
+    content = self.get_par(qs, 'content')
 
     x = int(self.get_par(qs, 'x', -1))
     y = int(self.get_par(qs, 'y', -1))
@@ -66,6 +67,9 @@ class Handler(BaseHTTPRequestHandler):
 
     in_zone = node.zone.contains(p)
     closest_nb = node.get_closest_neighbor(p)
+
+    # if p is not in zone forward the message to the closest neighbor
+    is_forward_message = True
 
     rsp = {}
 
@@ -78,7 +82,12 @@ class Handler(BaseHTTPRequestHandler):
     elif url.path == "/view":
       rsp = node.view()
     elif url.path == "/insert":
-      pass
+      if in_zone:
+        node.addFile(keyword, content)
+        rsp = {'result': 'success',
+               'keyword': keyword,
+               'content': content
+               }
     elif url.path == "/join":
       if in_zone:
         new_zone, new_files, new_neighbors = node.split(peer, source)
@@ -86,11 +95,14 @@ class Handler(BaseHTTPRequestHandler):
             'new_zone': new_zone.__dict__,
             'new_files': new_files,
             'new_neighbors': new_neighbors}
-      else:
-        # forward the message
-        rsp = node.get(closest_nb, self.path)
     else:
+      # Unknown command, do not forward message
+      is_forward_message = False
       rsp = {"status": "error", "error_message": "unknown command"}
+
+    if not in_zone and is_forward_message:
+      # forward the message
+      rsp = node.call(closest_nb, self.path)
 
     # append current node's address to route list
     if 'route' in rsp:
@@ -124,7 +136,7 @@ class Node(threading.Thread):
 
     # Neighbors
     #   key : address
-    #   value : (id, address, zone)
+    #   value : {id, address, zone}
     self.neighbors = {}
 
     # Assuming current node initially own the entire space
@@ -140,7 +152,7 @@ class Node(threading.Thread):
     d['port'] = self.port
     d['zone'] = str(self.zone)
     d['files'] = str(self.files)
-    d['neighbors'] = self.neighbors
+    d['neighbors'] = str(self.neighbors)
     d['bootstrap'] = self.bootstrap
     return str(d)
 
@@ -160,7 +172,7 @@ class Node(threading.Thread):
     closest_nb = None
 
     for nb in self.neighbors:
-      nb_zone = self.neighbors[nb]
+      nb_zone = self.neighbors[nb]['zone']
       dist = nb_zone.dist(point)
       if dist < min_dist:
         closest_nb = nb
@@ -227,7 +239,7 @@ class Node(threading.Thread):
     self.neighbors[source] = {
         'id': peer,
         'address': source,
-        'zone': new_zone.__dict__}
+        'zone': new_zone}
 
     new_neighbors = {}
 
@@ -273,12 +285,22 @@ class Node(threading.Thread):
     else:
       pars = self.buildQuestParameters(p)
       rsp = self.call(self.bootstrap, '/join', pars)
-      self.zone = rsp['new_zone']
+
+      # update node info
+      self.zone.setFromDict(rsp['new_zone'])
       self.files = rsp['new_files']
-      self.neighbors = rsp['new_neighbors']
+
+      new_neighbors = rsp['new_neighbors']
+
+      for address in new_neighbors:
+        self.addNeighbor(new_neighbors[address])
 
     print 'Joined!'
     self.view()
+
+  def addNeighbor(self, neighbor):
+    neighbor['zone'] = Zone().setFromDict(neighbor['zone'])
+    self.neighbors[neighbor['address']] = neighbor
 
   '''
   Insert the keyword and content into CAN
