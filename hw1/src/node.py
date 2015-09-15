@@ -58,6 +58,7 @@ class Handler(BaseHTTPRequestHandler):
     message = threading.currentThread().getName()
 
     peer = self.get_par(qs, 'peer')
+    source = self.get_par(qs, 'source')
     keyword = self.get_par(qs, 'keyword')
 
     x = int(self.get_par(qs, 'x', -1))
@@ -79,14 +80,15 @@ class Handler(BaseHTTPRequestHandler):
       pass
     elif url.path == "/join":
       if in_zone:
-        new_zone = node.zone.split()
-        rsp = {'new_zone': new_zone.__dict__}
+        new_zone, new_files = node.split(peer, source)
+        rsp = {'new_zone': new_zone.__dict__, 'new_files': new_files}
       else:
         # forward the message
         rsp = node.get(closest_nb, self.path)
     else:
       rsp = {"status": "error", "error_message": "unknown command"}
 
+    # append current node's address to route list
     if 'route' in rsp:
       rsp['route'].append(node._get_address())
     else:
@@ -113,9 +115,12 @@ class Node(threading.Thread):
     self.daemon = True
     self.server = None
 
+    # key
+    self.files = {}
+
     # Neighbors
     #   key : address
-    #   value : Zone
+    #   value : (id, address, zone)
     self.neighbors = {}
 
     # Assuming current node initially own the entire space
@@ -130,6 +135,7 @@ class Node(threading.Thread):
     d['ip'] = self.ip
     d['port'] = self.port
     d['zone'] = str(self.zone)
+    d['files'] = str(self.files)
     d['bootstrap'] = self.bootstrap
     return str(d)
 
@@ -173,6 +179,42 @@ class Node(threading.Thread):
   def view(self):
     print '[View]', self
 
+  '''
+  Split the zone owned by current node
+  And notify the all the neighbors
+  peer:
+    peer id
+  source:
+    peer address in ip:port format
+  return:
+    (new_zone, new_keywords)
+  '''
+
+  def split(self, peer, source):
+
+    org_zone = self.zone.clone()
+
+    # Split the zone
+    new_zone = self.zone.split()
+
+    # Split the files
+    new_files = {}
+
+    # Add files to new zone
+    for keyword in self.files:
+      if new_zone.contains(hash(keyword)):
+        new_files[keyword] = self.files[keyword]
+
+    # Remove files from current zone
+    for keyword in new_files:
+      del self.files[keyword]
+
+    # rsp = {'new_zone': new_zone.__dict__}
+    # TODO(zxi)
+    # notify neighbors
+
+    return new_zone, new_files
+
   def joinCAN(self):
     print 'Joining CAN...'
     p = random_point()
@@ -192,7 +234,7 @@ class Node(threading.Thread):
           'x': p.x,
           'y': p.y,
           'peer': self.id,
-          'address': self._get_address()}
+          'source': self._get_address()}
       # Call REST API
       rsp = self.get(self.bootstrap, '/join', pars)
       print rsp

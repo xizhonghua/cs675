@@ -13,6 +13,9 @@ class Zone(object):
     return str(self.x) + ', ' + str(self.y) + ', ' + \
         str(self.width) + ', ' + str(self.height)
 
+  def clone(self):
+    return Zone(self.x, self.y, self.width, self.height)
+
   '''
   Check whether a point is in the zone
   '''
