@@ -39,6 +39,9 @@ class ThreadedHTTPServer(threading.Thread, ThreadingMixIn, HTTPServer):
 
 class Handler(BaseHTTPRequestHandler):
 
+  def log_message(self, format, *args):
+    pass
+
   def get_par(self, qs, key, default_val=None):
     if key in qs:
       return qs[key][0]
@@ -47,10 +50,6 @@ class Handler(BaseHTTPRequestHandler):
   def do_GET(self):
 
     node = self.server.node
-
-    print 'node.id = ', node.id
-
-    print 'request.path = ', self.path
 
     url = urlparse.urlparse(self.path)
     qs = urlparse.parse_qs(url.query)
@@ -70,6 +69,8 @@ class Handler(BaseHTTPRequestHandler):
 
     rsp = {}
 
+    print '[REST Call]', self.path
+
     if url.path == "/":
       rsp = {"status": "ok", "data": "hello_world"}
     elif url.path == "/search":
@@ -80,8 +81,11 @@ class Handler(BaseHTTPRequestHandler):
       pass
     elif url.path == "/join":
       if in_zone:
-        new_zone, new_files = node.split(peer, source)
-        rsp = {'new_zone': new_zone.__dict__, 'new_files': new_files}
+        new_zone, new_files, new_neighbors = node.split(peer, source)
+        rsp = {
+            'new_zone': new_zone.__dict__,
+            'new_files': new_files,
+            'new_neighbors': new_neighbors}
       else:
         # forward the message
         rsp = node.get(closest_nb, self.path)
@@ -90,12 +94,12 @@ class Handler(BaseHTTPRequestHandler):
 
     # append current node's address to route list
     if 'route' in rsp:
-      rsp['route'].append(node._get_address())
+      rsp['route'].append(node.get_address())
     else:
-      rsp['route'] = [node._get_address()]
+      rsp['route'] = [node.get_address()]
 
     message = json.dumps(rsp)
-    print '[response] =', message
+    # print '[response] =', message
 
     self.send_response(200)
     self.end_headers()
@@ -136,11 +140,16 @@ class Node(threading.Thread):
     d['port'] = self.port
     d['zone'] = str(self.zone)
     d['files'] = str(self.files)
+    d['neighbors'] = self.neighbors
     d['bootstrap'] = self.bootstrap
     return str(d)
 
-  def _get_address(self):
+  def get_address(self):
     return self.ip + ':' + str(self.port)
+
+  def as_neighbor(self):
+    return {'id': self.id, 'address': self.get_address(),
+            'zone': self.zone.__dict__}
 
   '''
   Get the closest neighbors for a given target point
@@ -187,7 +196,7 @@ class Node(threading.Thread):
   source:
     peer address in ip:port format
   return:
-    (new_zone, new_keywords)
+    (new_zone, new_keywords, new_neighbors)
   '''
 
   def split(self, peer, source):
@@ -209,16 +218,27 @@ class Node(threading.Thread):
     for keyword in new_files:
       del self.files[keyword]
 
+    # Update neighbor info
+
+    self.neighbors[source] = {
+        'id': peer,
+        'address': source,
+        'zone': new_zone.__dict__}
+
+    new_neighbors = {}
+
+    new_neighbors[self.get_address()] = self.as_neighbor()
+
     # rsp = {'new_zone': new_zone.__dict__}
     # TODO(zxi)
     # notify neighbors
 
-    return new_zone, new_files
+    print 'Split!'
+    self.view()
+
+    return new_zone, new_files, new_neighbors
 
   def joinCAN(self):
-    print 'Joining CAN...'
-    p = random_point()
-    print 'Random point picked =', p
 
     self.server = ThreadedHTTPServer((self.ip, self.port), Handler, self)
     self.server.start()
@@ -227,6 +247,10 @@ class Node(threading.Thread):
     while not self.server.started:
       time.sleep(0.2)
 
+    print 'Joining CAN...'
+    p = random_point()
+    print 'Random point picked =', p
+
     if self.bootstrap is None:
       pass
     else:
@@ -234,12 +258,12 @@ class Node(threading.Thread):
           'x': p.x,
           'y': p.y,
           'peer': self.id,
-          'source': self._get_address()}
+          'source': self.get_address()}
       # Call REST API
       rsp = self.get(self.bootstrap, '/join', pars)
-      print rsp
       self.zone = rsp['new_zone']
       self.files = rsp['new_files']
+      self.neighbors = rsp['new_neighbors']
 
     print 'Joined!'
     self.view()
@@ -269,7 +293,7 @@ class Node(threading.Thread):
         self.stop()
         break
       elif var == "test":
-        print self.get(self._get_address(), '/', {'k1': 'v1', 'k2': 'v2', 'foo': 'bar'})
+        print self.get(self.get_address(), '/', {'k1': 'v1', 'k2': 'v2', 'foo': 'bar'})
     print 'Node stopped'
 
 

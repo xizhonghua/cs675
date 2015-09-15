@@ -44,6 +44,88 @@ class Zone(object):
     return self.width == self.height
 
   '''
+  Check whether two zones are neighbors
+  '''
+
+  def is_neightbor(self, zone):
+    for i in range(0, 4):
+      for j in range(0, 4):
+        if self._edge_overlap(self._get_edge(i), zone._get_edge(j)):
+          return True
+    return False
+
+  '''
+  Return an edge (Point, Point) of the zone
+  index: 0 top, 1 right, 2 bottom, 3 left
+  points in edge is from left to right, from top to bottom
+  '''
+
+  def _get_edge(self, index):
+    if index == 0:
+      return (Point(self.x, self.y),
+              Point(self.x + self.width, self.y))
+    if index == 1:
+      return (Point(self.x + self.width, self.y),
+              Point(self.x + self.width, self.y + self.height))
+    if index == 2:
+      return (Point(self.x, self.y + self.height),
+              Point(self.x + self.width, self.y + self.height))
+    if index == 3:
+      return (Point(self.x, self.y),
+              Point(self.x, self.y + self.height))
+
+  '''
+  Check whether two edges overlap
+  '''
+
+  def _edge_overlap(self, edge1, edge2):
+    # a, b = edge1
+    # c, d = edge2
+    inter_len = self._edge_intersect_len(edge1, edge2)
+    # print a, b, c, d, inter_len
+    return inter_len > 0
+    # ( self._point_in_edge(edge1, c) \
+    # or self._point_in_edge(edge1, d) \
+    # or self._point_in_edge(edge2, a) \
+    # or self._point_in_edge(edge2, b) )
+
+  def _edge_intersect_len(self, edge1, edge2):
+    a, b = edge1
+    c, d = edge2
+
+    # horizontal
+    if a.y == b.y and a.y == c.y and a.y == d.y:
+      sx = max(a.x, c.x)
+      tx = min(b.x, d.x)
+      return tx - sx
+
+    if a.x == b.x and a.x == c.x and a.x == d.x:
+      sy = max(a.y, c.y)
+      ty = min(b.y, d.y)
+      return ty - sy
+
+    return 0
+
+  '''
+  Check whether a point in edge
+  '''
+
+  def _point_in_edge(self, edge, p):
+    a, b = edge
+
+    # horizontal
+    if a.y == b.y and a.y == p.y:
+      if p.x >= a.x and p.x <= b.x:
+        return True
+
+    # vertical
+    if a.x == b.x and a.x == p.x:
+      if p.y >= a.y and p.y <= b.y:
+        return True
+
+    return False
+
+  '''
   Split the zone to half.
   Modify:
     self
@@ -93,3 +175,12 @@ if __name__ == '__main__':
     print 'new_zone:', new_zone
     if new_zone.width == 1 and new_zone.height == 1:
       break
+  print '--------------------------------'
+  print 'test is_neightbor'
+  zone1 = Zone(0, 0, 10, 10)
+  zone2 = Zone(10, 0, 10, 10)
+  print 'expected = True, actual =', zone1.is_neightbor(zone2)
+  print 'expected = True, actual =', zone2.is_neightbor(zone1)
+  zone3 = Zone(10, 10, 5, 5)
+  print 'expected = False, actual =', zone1.is_neightbor(zone3)
+  print '--------------------------------'
