@@ -90,19 +90,24 @@ class Handler(BaseHTTPRequestHandler):
     return
 
   def handle_merge(self):
+    self.is_forward_message = False
     self.node.merge(self.source, self.contents)
+    self.node.view()
     return
 
   def handle_add_neighbor(self):
+    self.is_forward_message = False
     neighbor = json.load(self.neighbor)
     is_success = self.node.add_neighbor(neighbor)
     self.rsp = {'success': is_success}
+    self.node.view()
     return
 
-  def handle_remove_neightbor(self):
-    neighbor = json.load(self.neighbor)
-    is_success = self.node.remove_neighbor(neighbor, parent)
+  def handle_remove_neighbor(self):
+    self.is_forward_message = False
+    is_success = self.node.remove_neighbor(self.neighbor, self.parent)
     self.rsp = {'success': is_success}
+    self.node.view()
     return
 
   def do_GET(self):
@@ -111,6 +116,8 @@ class Handler(BaseHTTPRequestHandler):
 
     url = urlparse.urlparse(self.path)
     qs = urlparse.parse_qs(url.query)
+
+    # print "[do_GET] qs =", qs
 
     message = threading.currentThread().getName()
 
@@ -121,7 +128,8 @@ class Handler(BaseHTTPRequestHandler):
     self.contents = self.get_par(qs, 'contents')
 
     if self.contents is not None:
-      self.contents = json.load(self.contents)
+      print 'self.contents =', self.contents
+      self.contents = json.loads(self.contents)
 
     self.neighbor = self.get_par(qs, 'neighbor')
     self.parent = self.get_par(qs, 'parent')
@@ -256,10 +264,12 @@ class Node(threading.Thread):
       path = path + '?' + qs
 
     url = "http://%s%s" % (address, path)
+
+    print '[REST][Client] Request =', url
+
     response = urllib2.urlopen(url)
     data = json.load(response)
 
-    print '[REST][Client] Request =', url
     print '[REST][Client] Response =', data
 
     return data
@@ -320,8 +330,6 @@ class Node(threading.Thread):
         self.call(address, "/add-neighbor", pars)
 
     self.neighbors[source] = new_node
-
-    self.view()
 
     return new_zone, new_files, new_neighbors
 
@@ -392,15 +400,22 @@ class Node(threading.Thread):
     self.neighbors[nb_address] = neighbor
     return True
 
+  '''
+  Remove the given neighbor
+  neighbor:
+    neighbor's address
+  parent:
+    neighbor's parent
+  '''
+
   def remove_neighbor(self, neighbor, parent):
-    nb_address = neighbor['address']
-    if nb_address in self.neighbors:
+    if neighbor in self.neighbors:
 
       # if my parent leaves CAN, set my parent to my parent's parent
-      if nb_address == self.parent:
+      if neighbor == self.parent:
         self.parent = parent
 
-      del self.neighbors[nb_address]
+      del self.neighbors[neighbor]
       return True
     return False
 
@@ -428,7 +443,7 @@ class Node(threading.Thread):
     p = hash(keyword)
     if self.zone.contains(p):
       self.add_file(keyword, content)
-      self.view()
+      # self.view()
     else:
       address = self.get_closest_neighbor(p)
       pars = self.build_request_paras(p, keyword=keyword, content=content)
@@ -452,6 +467,11 @@ class Node(threading.Thread):
   '''
 
   def leave_CAN(self):
+    # TODO(zxi) handle special case
+    if self.parent == '':
+      return
+
+    parent_node = self.neighbors[self.parent]
 
     # merge into parent node
     pars = self.build_request_paras(
@@ -461,9 +481,9 @@ class Node(threading.Thread):
     # notify all neighbors
     for nb in self.neighbors:
       pars = self.build_request_paras(
-          neighbor=mergeable_nb,
+          neighbor=self.get_address(),  # neighbor to remove
           parent=self.parent)
-      self.call(nb['address'], '/remove-neighbor')
+      self.call(nb, '/remove-neighbor', pars)
 
   '''
   Merge zones.
@@ -483,6 +503,8 @@ class Node(threading.Thread):
     # merge files
     for keyword in contents:
       self.files[keyword] = contents[keyword]
+
+    return
 
   def invoke_cmd(self, cmd, args):
     # print cmd
