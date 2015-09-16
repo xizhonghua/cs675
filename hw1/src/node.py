@@ -58,8 +58,8 @@ class Handler(BaseHTTPRequestHandler):
         self.peer, self.source)
 
     self.rsp = {
-        'parent': self.node.get_address()
-        'new_zone': new_zone,
+        'parent': self.node.get_address(),
+        'new_zone': new_zone.__dict__,
         'new_files': new_files,
         'new_neighbors': new_neighbors}
 
@@ -89,6 +89,10 @@ class Handler(BaseHTTPRequestHandler):
     self.rsp = self.node.view()
     return
 
+  def handle_merge(self):
+    self.node.merge(self.source, self.contents)
+    return
+
   def handle_add_neighbor(self):
     neighbor = json.load(self.neighbor)
     is_success = self.node.add_neighbor(neighbor)
@@ -97,7 +101,7 @@ class Handler(BaseHTTPRequestHandler):
 
   def handle_remove_neightbor(self):
     neighbor = json.load(self.neighbor)
-    is_success = self.node.remove_neighbor(neighbor)
+    is_success = self.node.remove_neighbor(neighbor, parent)
     self.rsp = {'success': is_success}
     return
 
@@ -114,7 +118,13 @@ class Handler(BaseHTTPRequestHandler):
     self.source = self.get_par(qs, 'source')
     self.keyword = self.get_par(qs, 'keyword')
     self.content = self.get_par(qs, 'content')
+    self.contents = self.get_par(qs, 'contents')
+
+    if self.contents is not None:
+      self.contents = json.load(self.contents)
+
     self.neighbor = self.get_par(qs, 'neighbor')
+    self.parent = self.get_par(qs, 'parent')
 
     self.x = int(self.get_par(qs, 'x', -1))
     self.y = int(self.get_par(qs, 'y', -1))
@@ -184,7 +194,7 @@ class Node(threading.Thread):
     self.server = None
 
     # parent node address, used for merge
-    self.parent_node_address = None
+    self.parent = ''
 
     # <keyword, [content]>
     self.files = {}
@@ -207,6 +217,7 @@ class Node(threading.Thread):
     d['port'] = self.port
     d['zone'] = str(self.zone)
     d['files'] = str(self.files)
+    d['parent'] = self.parent
     d['neighbors'] = str(self.neighbors)
     d['bootstrap'] = self.bootstrap
     return str(d)
@@ -358,7 +369,7 @@ class Node(threading.Thread):
       rsp = self.call(self.bootstrap, '/join', pars)
 
       # store parent node address
-      self.parent_node_address = rsp['parent']
+      self.parent = rsp['parent']
 
       # update node info
       self.zone.setFromDict(rsp['new_zone'])
@@ -381,9 +392,14 @@ class Node(threading.Thread):
     self.neighbors[nb_address] = neighbor
     return True
 
-  def remove_neighbor(self, neighbor):
+  def remove_neighbor(self, neighbor, parent):
     nb_address = neighbor['address']
     if nb_address in self.neighbors:
+
+      # if my parent leaves CAN, set my parent to my parent's parent
+      if nb_address == self.parent:
+        self.parent = parent
+
       del self.neighbors[nb_address]
       return True
     return False
@@ -440,13 +456,13 @@ class Node(threading.Thread):
     # merge into parent node
     pars = self.build_request_paras(
         contents=self.files)
-    self.call(self.parent_node_address, '/merge')
+    self.call(self.parent, '/merge', pars)
 
     # notify all neighbors
     for nb in self.neighbors:
       pars = self.build_request_paras(
           neighbor=mergeable_nb,
-          parent=self.parent_node_address)
+          parent=self.parent)
       self.call(nb['address'], '/remove-neighbor')
 
   '''

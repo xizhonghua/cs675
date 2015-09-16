@@ -13,8 +13,7 @@ class Zone(object):
     return self.__str__()
 
   def __str__(self):
-    return str(self.x) + ', ' + str(self.y) + ', ' + \
-        str(self.width) + ', ' + str(self.height)
+    return str(self.__dict__)
 
   def set(self, x, y, width, height):
     self.__init__(x, y, width, height)
@@ -141,13 +140,19 @@ class Zone(object):
     return new_zone
 
   '''
-  Merge two zones.
+  Merge two zones. Assuming two zones are mergeable
   Update:
     self
   '''
 
   def merge(self, zone):
-    pass
+    tx = min(self.x, zone.x)
+    ty = min(self.y, zone.y)
+    self.width = max(self.x + self.width, zone.x + zone.width) - tx
+    self.height = max(self.y + self.height, zone.y + zone.height) - ty
+    self.x = tx
+    self.y = ty
+    return self
 
 
 if __name__ == '__main__':
@@ -173,3 +178,6 @@ if __name__ == '__main__':
   zone3 = Zone(10, 10, 5, 5)
   print 'expected = False, actual =', zone1.is_neightbor(zone3)
   print '--------------------------------'
+
+  zone4 = Zone(10, 0, 10, 10)
+  print zone4.merge(zone1)
