@@ -58,7 +58,8 @@ class Handler(BaseHTTPRequestHandler):
         self.peer, self.source)
 
     self.rsp = {
-        'new_zone': new_zone.__dict__,
+        'parent': self.node.get_address()
+        'new_zone': new_zone,
         'new_files': new_files,
         'new_neighbors': new_neighbors}
 
@@ -182,7 +183,10 @@ class Node(threading.Thread):
     self.daemon = True
     self.server = None
 
-    # key
+    # parent node address, used for merge
+    self.parent_node_address = None
+
+    # <keyword, [content]>
     self.files = {}
 
     # Neighbors
@@ -311,7 +315,7 @@ class Node(threading.Thread):
     return new_zone, new_files, new_neighbors
 
   def build_request_paras(
-          self, p=None, keyword=None, content=None, contents=None, neighbor=None):
+          self, p=None, keyword=None, content=None, contents=None, neighbor=None, parent=None):
     pars = {
         'peer': self.id,
         'source': self.get_address()}
@@ -326,6 +330,8 @@ class Node(threading.Thread):
       pars['neighbor'] = neighbor
     if contents is not None:
       pars['contents'] = contents
+    if parent is not None:
+      pars['parent'] = parent
     return pars
 
   def join_CAN(self):
@@ -338,14 +344,21 @@ class Node(threading.Thread):
       time.sleep(0.2)
 
     print 'Joining CAN...'
-    p = random_point()
-    print 'Random point picked =', p
 
     if self.bootstrap is None:
+      # The first node in CAN
       pass
     else:
+      # Pick a random point
+      p = random_point()
+      print 'Random point picked =', p
+
+      # Send request to boosstrap node
       pars = self.build_request_paras(p)
       rsp = self.call(self.bootstrap, '/join', pars)
+
+      # store parent node address
+      self.parent_node_address = rsp['parent']
 
       # update node info
       self.zone.setFromDict(rsp['new_zone'])
@@ -423,22 +436,17 @@ class Node(threading.Thread):
   '''
 
   def leave_CAN(self):
-    mergeable_nb = None
 
-    # merge zone, migrate files
-    for nb in self.neighbors:
-      if nb['zone'].is_mergeable(self.zone):
-        mergeable_nb = nb
-        pars = self.build_request_paras(
-            contents=self.files)
-        self.call(nb['address'], '/merge')
-        break
+    # merge into parent node
+    pars = self.build_request_paras(
+        contents=self.files)
+    self.call(self.parent_node_address, '/merge')
 
-    # notify all other neighbors
+    # notify all neighbors
     for nb in self.neighbors:
-      if nb == mergeable_nb:
-        continue
-      pars = self.build_request_paras(neighbor=mergeable_nb)
+      pars = self.build_request_paras(
+          neighbor=mergeable_nb,
+          parent=self.parent_node_address)
       self.call(nb['address'], '/remove-neighbor')
 
   '''
