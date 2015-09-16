@@ -82,14 +82,23 @@ class Handler(BaseHTTPRequestHandler):
     self.rsp = {'result': 'success',
                 'keyword': self.keyword,
                 'contents': files}
+    return
 
   def handle_view(self):
     self.rsp = self.node.view()
+    return
 
   def handle_add_neighbor(self):
-    self.rsp = {'result': 'success'}
     neighbor = json.load(self.neighbor)
-    self.node.add_neighbor(neighbor)
+    is_success = self.node.add_neighbor(neighbor)
+    self.rsp = {'success': is_success}
+    return
+
+  def handle_remove_neightbor(self):
+    neighbor = json.load(self.neighbor)
+    is_success = self.node.remove_neighbor(neighbor)
+    self.rsp = {'success': is_success}
+    return
 
   def do_GET(self):
 
@@ -131,8 +140,12 @@ class Handler(BaseHTTPRequestHandler):
       self.handle_insert()
     elif url.path == "/join":
       self.handle_join()
+    elif url.path == "/merge":
+      self.handle_merge()
     elif url.path == "/add-neighbor":
       self.handle_add_neighbor()
+    elif url.path == "/remove-neighbor":
+      self.handle_remove_neighbor()
     else:
       # Unknown command, do not forward message
       self.is_forward_message = False
@@ -236,9 +249,6 @@ class Node(threading.Thread):
 
     return data
 
-  def search(self, keyword):
-    print 'query id=%s, keyword=%s' % (self.id, keyword)
-
   def view(self):
     print '[View]', self
 
@@ -301,7 +311,7 @@ class Node(threading.Thread):
     return new_zone, new_files, new_neighbors
 
   def build_request_paras(
-          self, p=None, keyword=None, content=None, neighbor=None):
+          self, p=None, keyword=None, content=None, contents=None, neighbor=None):
     pars = {
         'peer': self.id,
         'source': self.get_address()}
@@ -314,6 +324,8 @@ class Node(threading.Thread):
       pars['content'] = content
     if neighbor is not None:
       pars['neighbor'] = neighbor
+    if contents is not None:
+      pars['contents'] = contents
     return pars
 
   def join_CAN(self):
@@ -348,8 +360,20 @@ class Node(threading.Thread):
     self.view()
 
   def add_neighbor(self, neighbor):
+    nb_address = neighbor['address']
+    if nb_address in self.neighbors:
+      return False
+
     neighbor['zone'] = Zone().setFromDict(neighbor['zone'])
-    self.neighbors[neighbor['address']] = neighbor
+    self.neighbors[nb_address] = neighbor
+    return True
+
+  def remove_neighbor(self, neighbor):
+    nb_address = neighbor['address']
+    if nb_address in self.neighbors:
+      del self.neighbors[nb_address]
+      return True
+    return False
 
   '''
   Search for a keyword
@@ -392,8 +416,49 @@ class Node(threading.Thread):
     if self.server is not None:
       self.server.stop()
 
+  '''
+  Leave the CAN.
+  1) find the mergeable neighbor, and migrate zone/files to that node
+  2) notify all the neighbors
+  '''
+
   def leave_CAN(self):
-    pass
+    mergeable_nb = None
+
+    # merge zone, migrate files
+    for nb in self.neighbors:
+      if nb['zone'].is_mergeable(self.zone):
+        mergeable_nb = nb
+        pars = self.build_request_paras(
+            contents=self.files)
+        self.call(nb['address'], '/merge')
+        break
+
+    # notify all other neighbors
+    for nb in self.neighbors:
+      if nb == mergeable_nb:
+        continue
+      pars = self.build_request_paras(neighbor=mergeable_nb)
+      self.call(nb['address'], '/remove-neighbor')
+
+  '''
+  Merge zones.
+  source:
+    address of node to merge
+  contents:
+    contents to add
+  '''
+
+  def merge(self, source, contents):
+    # should be a neighbor
+    nb = self.neighbors[source]
+
+    # merge zones
+    self.zone.merge(nb['zone'])
+
+    # merge files
+    for keyword in contents:
+      self.files[keyword] = contents[keyword]
 
   def invoke_cmd(self, cmd, args):
     # print cmd
@@ -413,12 +478,14 @@ class Node(threading.Thread):
     elif cmd == "view":
       self.view()
     elif cmd == "leave":
-      pass
+      self.leave_CAN()
     elif cmd == "exit":
       self.stop()
       return False
     elif cmd == "test":
       print self.call(self.get_address(), '/', {'k1': 'v1', 'k2': 'v2', 'foo': 'bar'})
+    else:
+      print '[Error] Unknown command: %s' % cmd
 
     return True
 
