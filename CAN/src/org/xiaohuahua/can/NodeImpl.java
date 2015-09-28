@@ -7,8 +7,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import org.xiaohuahua.can.util.HashUtil;
 
@@ -35,14 +37,32 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     this.id = id;
     this.zone = new Zone(0, 0, Config.LENGTH, Config.LENGTH);
     this.bootstrap = bootstrap;
-  }
+  }  
 
-  public void join() {
+  public boolean join() {
     try {
       Map<String, InetSocketAddress> nodes = this.bootstrap.getNodeList();
+      
+      if(nodes.size() == 0) {
+        System.out.println("1st node in CAN!");
+        
+        return true;
+      }
+      
+      else
+      {
+        //TODO(zxi) join CAN using other nodes
+        for(String peerId : nodes.keySet()) {        
+          InetSocketAddress address = nodes.get(peerId);
+          
+        }
+      }
+      
     } catch (Exception e) {
       System.out.println("failed to join. Error: " + e);
     }
+    
+    return false;
   }
 
   /**

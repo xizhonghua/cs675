@@ -15,11 +15,11 @@ public class NodeServer {
     try {
 
       String peerId = args[0];
-      String bootstrapAddress = args[1];
+      String bootstrapAddress = args[1];           
 
       System.setSecurityManager(new SecurityManager());
 
-      String bootstrapUri = "rmi://" + bootstrapAddress + "/BootstrapService";
+      String bootstrapUri = "rmi://" + bootstrapAddress + "/" + Config.BOOTSTRAP_SERVICE_NAME;
 
       Bootstrap bootstrap = null;
 
@@ -32,10 +32,9 @@ public class NodeServer {
 
       System.out.println("Server: Registering Node Service " + peerId);
       NodeImpl node = new NodeImpl(peerId, bootstrap);      
-      Naming.rebind("NodeService_" + peerId, node);
-      node.join();
+      Naming.rebind(Config.NODE_SERVICE_NAME_PREFIX + peerId, node);      
       System.out.println("Server: Ready...");
-      //remote.
+      node.join();
     } catch (Exception e) {
       System.out.println("Server: Failed to register Bootstrap Service: " + e);
     }
