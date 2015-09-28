@@ -21,7 +21,7 @@ public final class BootstrapImpl extends UnicastRemoteObject
    */
   private static final int MAX_NODES = 3;
 
-  private Map<String, InetSocketAddress> nodes;
+  private Map<String, String> nodes;
 
   protected BootstrapImpl() throws RemoteException {
     super();
@@ -29,14 +29,13 @@ public final class BootstrapImpl extends UnicastRemoteObject
   }
 
   @Override
-  public Map<String, InetSocketAddress> getNodeList() throws RemoteException {
-    
+  public Map<String, String> getNodeList() throws RemoteException {
+
     System.out.println("BootstrapImpl.getNodeList");
-    
-    
+
     int nodesToReturn = Math.min(nodes.size(), MAX_NODES);
 
-    Map<String, InetSocketAddress> output = new HashMap<>();
+    Map<String, String> output = new HashMap<>();
     Random r = new Random(new Date().getTime());
 
     Object[] keys = nodes.keySet().toArray();
@@ -53,17 +52,18 @@ public final class BootstrapImpl extends UnicastRemoteObject
   }
 
   @Override
-  public boolean join(String peerId, InetSocketAddress address)
+  public boolean join(String peerId, String ip)
       throws RemoteException {
 
     if (nodes.containsKey(peerId)) {
-      if (!nodes.get(peerId).equals(address)) {
+      if (!nodes.get(peerId).equals(ip)) {
         throw new RemoteException("peer \"" + peerId + "\" alredy exists.");
       } else {
         throw new RemoteException("peer \"" + peerId + "\" alredy joined.");
       }
     } else {
-      nodes.put(peerId, address);
+      nodes.put(peerId, ip);
+      System.out.println("node " + peerId + "@" + ip + " joined CAN!");
       return true;
     }
   }
@@ -73,7 +73,8 @@ public final class BootstrapImpl extends UnicastRemoteObject
     if (!nodes.containsKey(peerId)) {
       throw new RemoteException("peer \"" + peerId + "\" does not exists.");
     } else {
-      nodes.remove(peerId);
+      String ip = nodes.remove(peerId);
+      System.out.println("node " + peerId + "@ " + ip + " left CAN!");
       return true;
     }
   }

@@ -9,21 +9,21 @@ public interface Bootstrap extends Remote {
 
   /**
    * 
-   * @return
+   * @return <peerId, ip>
    * @throws RemoteException
    */
-  Map<String, InetSocketAddress> getNodeList() throws RemoteException;
+  Map<String, String> getNodeList() throws RemoteException;
 
   /**
    * A node wants to join CAN
    * 
    * @param peerId
    *          peer id of the new node
-   * @param address
-   *          ip:port of the new node
+   * @param ip
+   *          ip of the new node
    * @return true if successfully joined CAN false otherwise
    */
-  boolean join(String peerId, InetSocketAddress address) throws RemoteException;
+  boolean join(String peerId, String ip) throws RemoteException;
 
   /**
    * A node wants to leave CAN

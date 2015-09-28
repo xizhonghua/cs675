@@ -1,17 +1,15 @@
 package org.xiaohuahua.can;
 
 import java.awt.Point;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Scanner;
+
 import org.xiaohuahua.can.util.HashUtil;
 
 public class NodeImpl extends UnicastRemoteObject implements Node {
@@ -21,7 +19,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
    */
   private static final long serialVersionUID = 1L;
 
-  private String id;
+  private String peerId;
 
   private String ip;
 
@@ -32,37 +30,49 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
   private Bootstrap bootstrap;
 
-  public NodeImpl(String id, Bootstrap bootstrap) throws RemoteException {
+  public NodeImpl(String peerId, String ip, Bootstrap bootstrap)
+      throws RemoteException {
     super();
-    this.id = id;
+    this.peerId = peerId;
+    this.ip = ip;
     this.zone = new Zone(0, 0, Config.LENGTH, Config.LENGTH);
     this.bootstrap = bootstrap;
-  }  
+  }
 
   public boolean join() {
     try {
-      Map<String, InetSocketAddress> nodes = this.bootstrap.getNodeList();
-      
-      if(nodes.size() == 0) {
+      Map<String, String> nodes = this.bootstrap.getNodeList();
+
+      if (nodes.size() == 0) {
         System.out.println("1st node in CAN!");
-        
-        return true;
+        this.bootstrap.join(this.peerId, this.ip);
       }
-      
-      else
-      {
-        //TODO(zxi) join CAN using other nodes
-        for(String peerId : nodes.keySet()) {        
-          InetSocketAddress address = nodes.get(peerId);
-          
+
+      else {
+        // TODO(zxi) join CAN using other nodes
+        for (String peerId : nodes.keySet()) {
+          String ip = nodes.get(peerId);
+
         }
       }
-      
+
     } catch (Exception e) {
       System.out.println("failed to join. Error: " + e);
     }
-    
-    return false;
+
+    return true;
+  }
+
+  public boolean leave() {
+
+    // Step 1: notify bootstrap node
+    try {
+      bootstrap.leave(this.peerId);
+    } catch (Exception e) {
+      System.out.println("Failed to leave CAN. Error: " + e);
+    }
+
+    return true;
   }
 
   /**
@@ -80,8 +90,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         case "vide":
           break;
         case "join":
+          this.join();
           break;
         case "leave":
+          this.leave();
           break;
         case "help":
           printHelp();
@@ -147,7 +159,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
   }
 
   public String getId() {
-    return this.id;
+    return this.peerId;
   }
 
   public String getIP() {
@@ -190,23 +202,5 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     System.err.println("insert keyword peer");
     System.err.println("\tInsert keyword to CAN from peer");
   }
-
-  // public static void main(String[] args) {
-  // if (System.getSecurityManager() == null) {
-  // System.setSecurityManager(new SecurityManager());
-  // }
-  // try {
-  // String name = "mynode";
-  // NodeImpl node = new NodeImpl(name);
-  // Node stub = (Node) UnicastRemoteObject.exportObject(node, 0);
-  // Registry registry = LocateRegistry.getRegistry();
-  // registry.rebind(name, stub);
-  // System.out.println("Node bound");
-  // node.run();
-  // } catch (Exception e) {
-  // System.err.println("Node exception:");
-  // e.printStackTrace();
-  // }
-  // }
 
 }
