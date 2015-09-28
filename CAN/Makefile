@@ -1,15 +1,18 @@
 SRC = ./src
 SRCS = $(shell find $(SRC) -name *.java)
 CLASSES = $(SRCS:.java=.class)
-NODECLASS = org.xiaohuahua.can.Node
+NODE_CLASS = org.xiaohuahua.can.NodeServer
+BOOTSTRAP_CLASS = org.xiaohuahua.can.BootstrapServer
 
 JC = javac
 JFLAGS = -g -classpath $(SRC)
 
-RUNCOMD = java -Djava.security.policy=java.policy \
+RUN_CMD = java -Djava.security.policy=java.policy \
 		 -Djava.rmi.server.codebase=file:$(SRC) \
-		 -classpath $(SRC) \
-		 $(NODECLASS)
+		 -classpath $(SRC)
+
+RUN_NODE = ${RUN_CMD} $(NODE_CLASS)
+RUN_BOOTSTRAP = ${RUN_CMD} ${BOOTSTRAP_CLASS}
 
 .SUFFIXES: .java .class
 
@@ -27,7 +30,10 @@ backup:
 	tar -c -f src.tar src/*
 
 run-node1: classes
-	$(RUNCOMD) node1
+	$(RUN_NODE) node1 localhost
 
 run-node2: classes
-	$(RUNCOMD) node2
+	$(RUN_NODE) node2
+
+run-bootstrap: classes
+	${RUN_BOOTSTRAP}
