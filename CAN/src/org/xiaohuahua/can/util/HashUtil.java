@@ -9,19 +9,19 @@ public class HashUtil {
 	
 	/**
 	 * Compute the coordinate of a keyword in virtual space
-	 * @param keyword
+	 * @param key
 	 * @return
 	 */
-	public static Point getCoordinate(String keyword) {
+	public static Point getCoordinate(String key) {
 		int x = 0;
 		int y = 0;
-		for(int i=0;i<keyword.length();i+=2)
-			x += keyword.charAt(i);
-		for(int i=1;i<keyword.length();i+=2)
-			y += keyword.charAt(i);
+		for(int i=0;i<key.length();i+=2)
+			x += key.charAt(i);
+		for(int i=1;i<key.length();i+=2)
+			y += key.charAt(i);
 		
-		x %= Config.LENGTH;
-		y %= Config.LENGTH;
+		x %= Config.ZONE_SIZE;
+		y %= Config.ZONE_SIZE;
 		
 		Point p = new Point(x, y);
 		

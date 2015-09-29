@@ -1,6 +1,5 @@
 package org.xiaohuahua.can;
 
-import java.net.InetSocketAddress;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Map;

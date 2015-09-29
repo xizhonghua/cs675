@@ -2,14 +2,19 @@ package org.xiaohuahua.can;
 
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.util.HashSet;
-import java.util.Set;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.xiaohuahua.can.util.HashUtil;
 
-public class Zone extends Rectangle {
+public class Zone extends Rectangle implements Serializable {
 
   private static final long serialVersionUID = 1L;
+
+  private Map<String, ArrayList<String>> files;
 
   public Zone() {
     this(0, 0, 0, 0);
@@ -17,11 +22,27 @@ public class Zone extends Rectangle {
 
   public Zone(int x, int y, int width, int height) {
     super(x, y, width, height);
-    
-    // this.files = new HashSet<>();
-    this.neighbors = new HashSet<>();
+
+    this.files = new HashMap<>();
   }
 
+  public boolean insertFile(String key, String content) {
+    if (!files.containsKey(key)) {
+      files.put(key, new ArrayList<String>());
+    }
+
+    files.get(key).add(content);
+
+    return true;
+  }
+
+  public List<String> getFiles(String key) {
+    if (files.containsKey(key)) {
+      return files.get(key);
+    }
+
+    return new ArrayList<String>();
+  }
 
   /**
    * Check whether the zone contains the given point
@@ -31,20 +52,34 @@ public class Zone extends Rectangle {
         && point.x < this.x + this.width && point.y < this.y + this.height);
   }
   
-//  public boolean contains(String keyword) {
-//    return this.files.contains(keyword);
-//  }
+  
+
+  /**
+   * Compute the distance from center of the zone to a given point
+   * 
+   * @param point
+   * @return
+   */
+  public double distanceTo(Point point) {
+    Point center = new Point(this.x + this.width / 2, this.y + this.height / 2);
+
+    return center.distance(point);
+  }
+
+  // public boolean contains(String keyword) {
+  // return this.files.contains(keyword);
+  // }
 
   /**
    * Split the zone
-   * 
+   * Update self
    * @return the split zone
    */
   public Zone split() {
-    
+
     // Split zone
-    int w = this.width;
-    int h = this.height;
+    final int w = this.width;
+    final int h = this.height;
 
     Zone newZone = new Zone();
 
@@ -59,22 +94,20 @@ public class Zone extends Rectangle {
       newZone.setBounds(this.x, this.y + h - sh, w, sh);
       this.setSize(w, h - sh);
     }
-    
-//    // Split files        
-//    for(String file : this.files)
-//    {
-//      Point coord = HashUtil.getCoordinate(file);
-//      if(newZone.contains(coord)) {
-//        newZone.files.add(file);        
-//      }     
-//    }
-//    
-//    for(String file : newZone.files) {
-//      this.files.remove(file);
-//    }
-    
-    // Split neighbors    
-    
+
+    // Split files
+    for (String key : this.files.keySet()) {
+      Point coord = HashUtil.getCoordinate(key);
+      if (newZone.contains(coord)) {
+        newZone.files.put(key, this.files.get(key));
+      }
+    }
+
+    for (String key : newZone.files.keySet()) {
+      this.files.remove(key);
+    }
+
+    // Split neighbors
 
     return newZone;
   }
@@ -102,18 +135,15 @@ public class Zone extends Rectangle {
 
     // Merge zone
     this.setBounds(this.union(zone));
-    
-//    // Merge files
-//    this.files.addAll(zone.files);
-    
+
+    // // Merge files
+    // this.files.addAll(zone.files);
+
     // Merge neighbors
-    this.neighbors.addAll(zone.neighbors);
+    // this.neighbors.addAll(zone.neighbors);
   }
-  
-//  public void addFile(String keyword) {
-//    this.files.add(keyword);
-//  }
-  
-  // private Set<String> files;
-  private Set<Rectangle> neighbors;
+
+  // public void addFile(String keyword) {
+  // this.files.add(keyword);
+  // }
 }

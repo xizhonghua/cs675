@@ -4,7 +4,7 @@ public class Config {
 	/**
 	 * MAX length of the virtual space
 	 */
-	public static final int LENGTH = 10;
+	public static final int ZONE_SIZE = 10;
 	
 	public static final String SERVICE_PREFIX = "XIAOHUAHUA_";
 	
