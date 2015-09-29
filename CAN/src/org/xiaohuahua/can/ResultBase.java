@@ -11,25 +11,20 @@ public abstract class ResultBase implements Serializable {
    */
   private static final long serialVersionUID = 1L;
 
-  // private String reqPeerId;
-  // private String reqIp;
   private List<String> routes;
 
-  protected ResultBase(String resIp) {
-    // String reqPeerId, String reqIp,
-    // this.reqPeerId = reqPeerId;
-    // this.reqIp = reqIp;
+  // Last peer that handle the request
+  private String peerId;
+
+  protected ResultBase(String peerId, String ip) {
+    this.peerId = peerId;
     this.routes = new ArrayList<>();
-    routes.add(resIp);
+    routes.add(ip);
   }
 
-  // public String getReqPeerId() {
-  // return this.reqPeerId;
-  // }
-  //
-  // public String getReqIp() {
-  // return this.reqIp;
-  // }
+  public String getPeerId() {
+    return this.peerId;
+  }
 
   public List<String> getRoutes() {
     return this.routes;

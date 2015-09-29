@@ -13,13 +13,14 @@ public class SearchResult extends ResultBase implements Serializable {
   private String key;
   private List<String> files;
 
-  public SearchResult(String resIp, String key, List<String> files) {
-    super(resIp);
+  public SearchResult(String peerId, String ip, String key,
+      List<String> files) {
+    super(peerId, ip);
     this.key = key;
     this.files = files;
   }
 
-  public String getKey(){
+  public String getKey() {
     return this.key;
   }
 

@@ -42,7 +42,7 @@ public interface Node extends Remote {
    * @return
    * @throws RemoteException
    */
-  public JoinResult canJoin(String peerId, String ip, Point point)
+  public JoinResult joinCAN(String peerId, String ip, Point point)
       throws RemoteException;
 
   /**
@@ -52,7 +52,7 @@ public interface Node extends Remote {
    * @return
    * @throws RemoteException
    */
-  public SearchResult canSearch(String key) throws RemoteException;
+  public SearchResult searchCAN(String key) throws RemoteException;
 
   /**
    * Insert a file
@@ -64,6 +64,6 @@ public interface Node extends Remote {
    * @return
    * @throws RemoteException
    */
-  public ResultBase canInsert(String key, String content)
+  public InsertResult insertCAN(String key, String content)
       throws RemoteException;
 }

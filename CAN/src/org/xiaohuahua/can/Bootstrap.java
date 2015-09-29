@@ -7,11 +7,18 @@ import java.util.Map;
 public interface Bootstrap extends Remote {
 
   /**
+   * List random node list
    * 
-   * @return <peerId, ip>
+   * @param peerId
+   *          requester peerId
+   * @param ip
+   *          requester ip
+   * @return 
+   *      <peerId, ip>
    * @throws RemoteException
    */
-  Map<String, String> getNodeList() throws RemoteException;
+  Map<String, String> getNodeList(String peerId, String ip)
+      throws RemoteException;
 
   /**
    * A node wants to join CAN

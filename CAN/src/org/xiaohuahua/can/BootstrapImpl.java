@@ -1,6 +1,5 @@
 package org.xiaohuahua.can;
 
-import java.net.InetSocketAddress;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.Date;
@@ -11,6 +10,7 @@ import java.util.Random;
 public final class BootstrapImpl extends UnicastRemoteObject
     implements Bootstrap {
 
+  public static final String NAME = "[Bootstrap] ";
   /**
    * 
    */
@@ -29,9 +29,10 @@ public final class BootstrapImpl extends UnicastRemoteObject
   }
 
   @Override
-  public Map<String, String> getNodeList() throws RemoteException {
+  public Map<String, String> getNodeList(String peerId, String ip)
+      throws RemoteException {
 
-    System.out.println("BootstrapImpl.getNodeList");
+    System.out.println(NAME + peerId + "@" + ip + " requested node list!");
 
     int nodesToReturn = Math.min(nodes.size(), MAX_NODES);
 
@@ -52,8 +53,7 @@ public final class BootstrapImpl extends UnicastRemoteObject
   }
 
   @Override
-  public boolean join(String peerId, String ip)
-      throws RemoteException {
+  public boolean join(String peerId, String ip) throws RemoteException {
 
     if (nodes.containsKey(peerId)) {
       if (!nodes.get(peerId).equals(ip)) {
@@ -63,7 +63,7 @@ public final class BootstrapImpl extends UnicastRemoteObject
       }
     } else {
       nodes.put(peerId, ip);
-      System.out.println("node " + peerId + "@" + ip + " joined CAN!");
+      System.out.println(NAME + peerId + "@" + ip + " joined CAN!");
       return true;
     }
   }
@@ -74,7 +74,7 @@ public final class BootstrapImpl extends UnicastRemoteObject
       throw new RemoteException("peer \"" + peerId + "\" does not exists.");
     } else {
       String ip = nodes.remove(peerId);
-      System.out.println("node " + peerId + "@ " + ip + " left CAN!");
+      System.out.println(NAME + peerId + "@" + ip + " left CAN!");
       return true;
     }
   }

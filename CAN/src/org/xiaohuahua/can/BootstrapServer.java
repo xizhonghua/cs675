@@ -7,12 +7,13 @@ public class BootstrapServer {
   public static void main(String[] args) {
     try {
       System.setSecurityManager(new SecurityManager());
-      System.out.println("Server: Registering Bootstrap Service");
+      System.out.println(BootstrapImpl.NAME + "Registering Bootstrap Service");
       BootstrapImpl remote = new BootstrapImpl();
       Naming.rebind(Config.BOOTSTRAP_SERVICE_NAME, remote);
-      System.out.println("Server: Ready...");
+      System.out.println(BootstrapImpl.NAME + "Ready...");
     } catch (Exception e) {
-      System.out.println("Server: Failed to register Bootstrap Service: " + e);
+      System.out.println(
+          BootstrapImpl.NAME + "Failed to register Bootstrap Service: " + e);
     }
   }
 

@@ -17,7 +17,6 @@ public class NodeServer {
 
       String bootstrapAddress = args[0];
       String peerId = args[1];
-      
 
       System.setSecurityManager(new SecurityManager());
 
@@ -31,26 +30,26 @@ public class NodeServer {
       try {
         bootstrap = (Bootstrap) Naming.lookup(bootstrapUri);
       } catch (Exception e) {
-        System.out.println("[NodeServer]: Can not find bootstrap serivce @ "
+        System.out.println("[NodeServer] Can not find bootstrap serivce @ "
             + bootstrapAddress + " error: " + e);
       }
 
       InetAddress localhost = InetAddress.getLocalHost();
       String ip = localhost.getHostAddress();
 
-      System.out.println("[NodeServer]: Registering Node Service "
+      System.out.println("[NodeServer] Registering Node Service "
           + nodeServiceName + " @ " + ip);
-      
+
       NodeImpl node = new NodeImpl(peerId, ip, bootstrap);
 
       Naming.rebind(nodeServiceName, node);
 
-      System.out.println("[NodeServer]: Ready...");
-      
+      System.out.println("[NodeServer] Ready...");
+
       node.run();
     } catch (Exception e) {
       System.out
-          .println("[NodeServer]: Failed to register Bootstrap Service: " + e);
+          .println("[NodeServer] Failed to register Bootstrap Service: " + e);
     }
   }
 

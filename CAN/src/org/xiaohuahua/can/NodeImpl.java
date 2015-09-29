@@ -1,8 +1,6 @@
 package org.xiaohuahua.can;
 
 import java.awt.Point;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -16,6 +14,8 @@ import java.util.Scanner;
 import org.xiaohuahua.can.util.HashUtil;
 
 public class NodeImpl extends UnicastRemoteObject implements Node {
+
+  public static final String NAME = "[Node] ";
 
   /**
    * 
@@ -37,6 +37,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
   private Random random;
 
+  private List<Neighbor> neighbors;
+
   public NodeImpl(String peerId, String ip, Bootstrap bootstrap)
       throws RemoteException {
     super();
@@ -46,6 +48,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     this.bootstrap = bootstrap;
     this.random = new Random(new Date().getTime());
     this.joined = false;
+    this.neighbors = new ArrayList<>();
   }
 
   public String getId() {
@@ -67,10 +70,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
   public boolean join() {
 
     try {
-      Map<String, String> nodes = this.bootstrap.getNodeList();
+
+      //
+      Map<String, String> nodes = this.bootstrap.getNodeList(this.peerId,
+          this.ip);
 
       if (nodes.size() == 0) {
-        System.out.println("[NodeServer] 1st node in CAN!");
+        System.out.println(NAME + "1st node in CAN!");
         this.bootstrap.join(this.peerId, this.ip);
 
         this.joined = true;
@@ -88,7 +94,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
           if (node == null)
             continue;
 
-          JoinResult result = node.canJoin(this.peerId, this.ip, point);
+          JoinResult result = node.joinCAN(this.peerId, this.ip, point);
 
           this.zone = result.getNewZone();
 
@@ -99,11 +105,11 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
       }
 
     } catch (Exception e) {
-      System.out.println("failed to join. Error: " + e);
+      System.out.println(NAME + "Failed to join CAN. Error: " + e);
     }
 
     if (joined) {
-      System.out.println("[NodeServer] joined CAN!");
+      System.out.println(NAME + "CAN joined!");
 
       this.view();
     }
@@ -117,8 +123,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     try {
       bootstrap.leave(this.peerId);
     } catch (Exception e) {
-      System.out.println("Failed to leave CAN. Error: " + e);
+      System.out.println(NAME + "Failed to leave CAN. Error: " + e);
     }
+
+    System.out.println(NAME + "Left CAN!");
 
     return true;
   }
@@ -132,10 +140,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         String[] parameters = s.nextLine().split(" ");
         switch (parameters[0]) {
         case "insert":
+          this.hanldeInsert(parameters);
           break;
         case "search":
+          this.handleSearch(parameters);
           break;
-        case "viwe":
+        case "view":
           this.view();
           break;
         case "join":
@@ -148,6 +158,44 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
           printHelp();
           break;
         }
+      }
+    }
+  }
+
+  private void hanldeInsert(String[] parameters) {
+    if (parameters.length != 3) {
+      System.out.println("Usage: insert key content");
+    } else {
+      String key = parameters[1];
+      String content = parameters[2];
+      String kv = "{\"" + key + "\":\"" + content + "\"}";
+
+      try {
+        InsertResult result = this.insertCAN(key, content);
+        System.out.println(NAME + kv + " inserted!");
+        this.printPeerAndRoute(result);
+      } catch (Exception e) {
+        System.out.println(NAME + "Failed to insert" + kv + ". Error: " + e);
+      }
+    }
+  }
+
+  private void handleSearch(String[] parameters) {
+    if (parameters.length != 2) {
+      System.out.println("Usage: search key");
+    } else {
+      String key = parameters[1];
+
+      try {
+        SearchResult result = this.searchCAN(key);
+        System.out.println(NAME + "Search results: matched files = "
+            + result.getFiles().size());
+        System.out.println("\tkey = \"" + result.getKey() + "\"");
+        for (String content : result.getFiles())
+          System.out.println("\t\tContent = \"" + content + "\"");
+        this.printPeerAndRoute(result);
+      } catch (Exception e) {
+        System.out.println(NAME + "Failed to search" + key + ". Error: " + e);
       }
     }
   }
@@ -191,7 +239,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
   }
 
   @Override
-  public JoinResult canJoin(String peerId, String ip, Point point)
+  public JoinResult joinCAN(String peerId, String ip, Point point)
       throws RemoteException {
 
     if (this.containsPoint(point)) {
@@ -202,7 +250,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
         Zone newZone = this.zone.split();
 
-        JoinResult result = new JoinResult(this.ip, newZone);
+        JoinResult result = new JoinResult(this.peerId, this.ip, newZone, null);
 
         return result;
       } else {
@@ -211,7 +259,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
       }
     } else {
       Node n = this.getNearestNeighbor(point);
-      JoinResult result = n.canJoin(peerId, ip, point);
+      JoinResult result = n.joinCAN(peerId, ip, point);
       result.prependRoute(this.ip);
 
       return result;
@@ -224,26 +272,31 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
   }
 
   @Override
-  public SearchResult canSearch(String key) throws RemoteException {
+  public SearchResult searchCAN(String key) throws RemoteException {
     Point point = HashUtil.getCoordinate(key);
     if (this.containsPoint(point)) {
       List<String> files = this.getFiles(key);
-      SearchResult reslt = new SearchResult(this.ip, key, files);
+      SearchResult reslt = new SearchResult(this.peerId, this.ip, key, files);
       return reslt;
     } else {
       Node n = this.getNearestNeighbor(point);
-      SearchResult result = n.canSearch(key);
+      SearchResult result = n.searchCAN(key);
       result.prependRoute(this.ip);
       return result;
     }
   }
 
   @Override
-  public ResultBase canInsert(String key, String content)
+  public InsertResult insertCAN(String key, String content)
       throws RemoteException {
     Point point = HashUtil.getCoordinate(key);
     if (this.containsPoint(point)) {
       this.insertFile(key, content);
+      InsertResult result = new InsertResult(this.peerId, this.ip, key,
+          content);
+      return result;
+    } else {
+
     }
     return null;
   }
@@ -286,6 +339,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     return new ArrayList<>();
   }
 
+  /**
+   * Insert the given file to zone/tmp zone
+   * 
+   * @param key
+   * @param content
+   */
   private void insertFile(String key, String content) {
     Point p = HashUtil.getCoordinate(key);
 
@@ -296,9 +355,17 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     // TODO(zxi) check temp zones...
   }
 
+  private void printPeerAndRoute(ResultBase result) {
+
+    System.out.println(NAME + "Peer = " + result.getPeerId() + "@"
+        + result.getRoutes().get(0));
+
+    System.out.println(NAME + "Route = " + result.getRoutes());
+  }
+
   // view self
   private void view() {
-    System.out.println("----------------");
+    System.out.println("--------------------------------");
     System.out.println("View");
     System.out.println("peerId = " + this.peerId);
     System.out.println("ip = " + this.ip);
@@ -311,14 +378,18 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         System.out.println("\t\tContent = \"" + content + "\"");
       }
     }
-    System.out.println("----------------");
+    System.out.println("--------------------------------");
   }
 
   private static void printHelp() {
     // TODO(zxi) print help
     System.err.println("Commands:");
-    System.err.println("insert keyword peer");
-    System.err.println("\tInsert keyword to CAN from peer");
+    System.err.println("join                   | join CAN");
+    System.err
+        .println("insert keyword content | insert keyword/content into CAN");
+    System.err.println("search keyword         | search by keyword");
+    System.err.println("leave                  | leave CAN");
+    System.err.println("help                   | print this message");
   }
 
 }
