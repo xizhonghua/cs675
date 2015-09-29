@@ -7,7 +7,7 @@ public class Neighbor implements Serializable {
    * 
    */
   private static final long serialVersionUID = 1L;
-  
+
   private String peerId;
   private String ip;
   /**
@@ -30,8 +30,17 @@ public class Neighbor implements Serializable {
     return this.ip;
   }
 
+  public String getName() {
+    return this.peerId + "@" + this.ip;
+  }
+
   public Zone getZone() {
     return (Zone) this.zone.clone();
+  }
+
+  @Override
+  public String toString() {
+    return "{ " + this.getName() + ", " + this.zone.toString() + " }";
   }
 
   @Override

@@ -36,5 +36,11 @@ run-node1: classes
 run-node2: classes
 	$(RUN_NODE) node2
 
+run-node3: classes
+	$(RUN_NODE) node3
+
+run-node4: classes
+	$(RUN_NODE) node4
+
 run-bootstrap: classes
 	${RUN_BOOTSTRAP}

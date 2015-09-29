@@ -96,9 +96,16 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
           JoinResult result = node.joinCAN(this.peerId, this.ip, point);
 
+          // update zone info and neighbors
           this.zone = result.getNewZone();
+          this.neighbors = result.getNewNeighbors();
+
+          // notify bootstrap
+          this.bootstrap.join(this.peerId, this.ip);
 
           this.joined = true;
+
+          this.printPeerAndRoute(result);
 
           break;
         }
@@ -249,11 +256,50 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         // TODO(zxi) update neighbor info...
 
         Zone newZone = this.zone.split();
+        List<Neighbor> newNeighbors = new ArrayList<>();
+        List<Neighbor> neighborsToRemove = new ArrayList<>();
 
-        JoinResult result = new JoinResult(this.peerId, this.ip, newZone, null);
+        for (Neighbor nb : this.neighbors) {
+          if (nb.getZone().isNeighbor(newZone))
+            newNeighbors.add(nb);
+          if (!nb.getZone().isNeighbor(this.zone))
+            neighborsToRemove.add(nb);
+        }
+
+        // Remove neighbor
+        for (Neighbor nb : neighborsToRemove) {
+          Node node = this.getNode(nb);
+          node.removeNeighbor(this.asNeighbor());
+        }
+
+        // Update zone info for neighbors
+        for (Neighbor nb : this.neighbors) {
+          Node node = this.getNode(nb);
+          node.addOrUpdateNeighbor(this.asNeighbor());
+        }
+
+        Neighbor neighbor = new Neighbor(peerId, ip, newZone);
+
+        // add each other as neighbor
+        this.addOrUpdateNeighbor(neighbor);
+        newNeighbors.add(this.asNeighbor());
+
+        // Notify new node neighbor entered
+        for (Neighbor nb : newNeighbors) {
+          Node node = this.getNode(nb);
+          node.addOrUpdateNeighbor(neighbor);
+        }
+
+        this.view();
+
+        // generate the result
+        JoinResult result = new JoinResult(this.peerId, this.ip, newZone,
+            newNeighbors);
 
         return result;
       } else {
+
+        this.view();
         // TODO(zxi) migrate zone
         return null;
       }
@@ -264,6 +310,42 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
       return result;
     }
+  }
+
+  @Override
+  public void addOrUpdateNeighbor(Neighbor neighbor) throws RemoteException {
+    for (int i = 0; i < this.neighbors.size(); ++i) {
+      if (this.neighbors.get(i).equals(neighbor)) {
+        // Update
+        Neighbor oldNeighbor = this.neighbors.get(i);
+        this.neighbors.set(i, neighbor);
+        System.out.println(
+            NAME + "Neighbor" + neighbor.getName() + "'s zone updated from "
+                + oldNeighbor.getZone() + " to " + neighbor.getZone());
+        return;
+      }
+    }
+
+    this.neighbors.add(neighbor);
+    System.out.println(NAME + "New neighbor added!");
+    System.out.println(NAME + "New neighbor = " + neighbor);
+  }
+
+  @Override
+  public void removeNeighbor(Neighbor neighbor) throws RemoteException {
+    for (int i = 0; i < this.neighbors.size(); ++i) {
+      if (this.neighbors.get(i).equals(neighbor)) {
+        // Update
+        Neighbor oldNeighbor = this.neighbors.get(i);
+        this.neighbors.remove(oldNeighbor);
+        System.out.println(NAME + "Neighbor removed");
+        System.out.println(NAME + "Removed neighbor = " + oldNeighbor);
+        return;
+      }
+    }
+
+    throw new RemoteException("Failed to remove uknown neighbor: " + neighbor);
+
   }
 
   @Override
@@ -312,6 +394,10 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
    */
   private Node getNearestNeighbor(Point point) {
     return null;
+  }
+
+  private Node getNode(Neighbor nb) {
+    return this.getNode(nb.getIp(), nb.getPeerId());
   }
 
   private Node getNode(String ip, String peerId) {
@@ -370,6 +456,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     System.out.println("peerId = " + this.peerId);
     System.out.println("ip = " + this.ip);
     System.out.println("Zone = " + this.zone.toString());
+    System.out.println("Neighbors = ");
+    for (Neighbor neighbor : this.neighbors)
+      System.out.println("\t" + neighbor);
     System.out.println("Files = ");
     for (String key : this.zone.getKeySet()) {
       List<String> contents = this.zone.getFiles(key);

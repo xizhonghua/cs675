@@ -146,9 +146,42 @@ public class Zone extends Rectangle implements Serializable {
     // this.neighbors.addAll(zone.neighbors);
   }
 
+  /**
+   * Check whether this is a neighbor of a given zone
+   * 
+   * @param other
+   * @return
+   */
+  public boolean isNeighbor(Zone other) {
+
+    boolean x_inter = (this.x >= other.x && this.x < other.x + other.width)
+        || (other.x >= this.x && other.x < this.x + this.width);
+
+    boolean y_inter = (this.y >= other.y && this.y < other.y + other.height)
+        || (other.y >= this.y && other.y < this.y + this.height);
+
+    // this.top == other.bottom
+    if (this.y == other.y + other.height && x_inter)
+      return true;
+
+    // this.left == other.right
+    if (this.x == other.x + other.width && y_inter)
+      return true;
+
+    // this.bottom == other.top
+    if (this.y + this.height == other.y && x_inter)
+      return true;
+
+    // this.right == other.left
+    if (this.x + this.width == other.x && y_inter)
+      return true;
+
+    return false;
+  }
+
   @Override
   public String toString() {
-    return "{(" + this.x + "," + this.y + "), (" + this.width + ","
-        + this.height + ")}";
+    return "{ (" + this.x + "," + this.y + "), (" + this.width + ","
+        + this.height + ") }";
   }
 }

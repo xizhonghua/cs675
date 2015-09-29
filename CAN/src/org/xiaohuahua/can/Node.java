@@ -66,4 +66,22 @@ public interface Node extends Remote {
    */
   public InsertResult insertCAN(String key, String content)
       throws RemoteException;
+
+  /**
+   * Add or update a neighbor
+   * 
+   * @param neighbor
+   *          neighbor to add or update
+   * @throws RemoteException
+   */
+  public void addOrUpdateNeighbor(Neighbor neighbor) throws RemoteException;
+
+  /**
+   * Remove a given neighbor
+   * 
+   * @param neighbor
+   *          neighbor to remove
+   * @throws RemoteException
+   */
+  public void removeNeighbor(Neighbor neighbor) throws RemoteException;
 }
