@@ -77,7 +77,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
       }
 
       else {
-        Point pt = new Point(random.nextInt(Config.ZONE_SIZE),
+        Point point = new Point(random.nextInt(Config.ZONE_SIZE),
             random.nextInt(Config.ZONE_SIZE));
 
         // TODO(zxi) join CAN using other nodes
@@ -88,8 +88,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
           if (node == null)
             continue;
 
-          // node.
+          JoinResult result = node.canJoin(this.peerId, this.ip, point);
 
+          this.zone = result.getNewZone();
+
+          this.joined = true;
+
+          break;
         }
       }
 
@@ -97,7 +102,11 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
       System.out.println("failed to join. Error: " + e);
     }
 
-    System.out.println("[NodeServer] joined CAN!");
+    if (joined) {
+      System.out.println("[NodeServer] joined CAN!");
+
+      this.view();
+    }
 
     return joined;
   }
@@ -126,7 +135,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
           break;
         case "search":
           break;
-        case "vide":
+        case "viwe":
+          this.view();
           break;
         case "join":
           this.join();
@@ -209,7 +219,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
   }
 
   @Override
-  public Neighbor asNeighbor() {
+  public Neighbor asNeighbor() throws RemoteException {
     return new Neighbor(this.peerId, this.ip, this.zone);
   }
 
@@ -284,7 +294,24 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     // TODO(zxi) check temp zones...
+  }
 
+  // view self
+  private void view() {
+    System.out.println("----------------");
+    System.out.println("View");
+    System.out.println("peerId = " + this.peerId);
+    System.out.println("ip = " + this.ip);
+    System.out.println("Zone = " + this.zone.toString());
+    System.out.println("Files = ");
+    for (String key : this.zone.getKeySet()) {
+      List<String> contents = this.zone.getFiles(key);
+      System.out.println("\tKey = \"" + key + "\"");
+      for (String content : contents) {
+        System.out.println("\t\tContent = \"" + content + "\"");
+      }
+    }
+    System.out.println("----------------");
   }
 
   private static void printHelp() {

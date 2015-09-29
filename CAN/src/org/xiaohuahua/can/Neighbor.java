@@ -1,6 +1,13 @@
 package org.xiaohuahua.can;
 
-public class Neighbor {
+import java.io.Serializable;
+
+public class Neighbor implements Serializable {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+  
   private String peerId;
   private String ip;
   /**

@@ -28,7 +28,7 @@ public interface Node extends Remote {
    * 
    * @return
    */
-  public Neighbor asNeighbor();
+  public Neighbor asNeighbor() throws RemoteException;
 
   /**
    * Help a new node to join CAN

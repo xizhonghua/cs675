@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.xiaohuahua.can.util.HashUtil;
 
@@ -36,6 +37,10 @@ public class Zone extends Rectangle implements Serializable {
     return true;
   }
 
+  public Set<String> getKeySet() {
+    return this.files.keySet();
+  }
+
   public List<String> getFiles(String key) {
     if (files.containsKey(key)) {
       return files.get(key);
@@ -51,8 +56,6 @@ public class Zone extends Rectangle implements Serializable {
     return (point.x >= this.x && point.y >= this.y
         && point.x < this.x + this.width && point.y < this.y + this.height);
   }
-  
-  
 
   /**
    * Compute the distance from center of the zone to a given point
@@ -71,8 +74,8 @@ public class Zone extends Rectangle implements Serializable {
   // }
 
   /**
-   * Split the zone
-   * Update self
+   * Split the zone Update self
+   * 
    * @return the split zone
    */
   public Zone split() {
@@ -143,7 +146,9 @@ public class Zone extends Rectangle implements Serializable {
     // this.neighbors.addAll(zone.neighbors);
   }
 
-  // public void addFile(String keyword) {
-  // this.files.add(keyword);
-  // }
+  @Override
+  public String toString() {
+    return "{(" + this.x + "," + this.y + "), (" + this.width + ","
+        + this.height + ")}";
+  }
 }
