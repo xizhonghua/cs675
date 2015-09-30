@@ -24,6 +24,15 @@ public interface Node extends Remote {
   public double distanceTo(Point point) throws RemoteException;
 
   /**
+   * Remove current zone with the given zone
+   * 
+   * @param zone
+   *          zone to merge
+   * @throws RemoteException
+   */
+  public void mergeZone(Zone zone) throws RemoteException;
+
+  /**
    * Get neighbor representation of current node
    * 
    * @return

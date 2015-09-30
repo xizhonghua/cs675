@@ -86,7 +86,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         Point point = new Point(random.nextInt(Config.ZONE_SIZE),
             random.nextInt(Config.ZONE_SIZE));
 
-        // TODO(zxi) join CAN using other nodes
         for (String peerId : nodes.keySet()) {
           String ip = nodes.get(peerId);
 
@@ -132,6 +131,36 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     } catch (Exception e) {
       System.out.println(NAME + "Failed to leave CAN. Error: " + e);
     }
+
+    try {
+
+      // Step 2: update zones/neighbors
+      for (Neighbor nb : this.neighbors) {
+        if (nb.getZone().canMerge(this.zone)) {
+          // Step 2.1 Merge current zone to a new node
+          Node node = this.getNode(nb);
+          node.mergeZone(this.zone);
+
+          // Step 2.2 Notify current neighbors
+          for (Neighbor enb : this.neighbors) {
+
+            Node enode = this.getNode(enb);
+
+            // Step 2.2.1 Notify existing neighbors to remove myself
+            enode.removeNeighbor(this.asNeighbor());
+            // Step 2.2.2 Notify existing neighbors to add new neighbor
+            if (!enb.equals(nb))
+              enode.addOrUpdateNeighbor(nb);
+          }
+
+          break;
+        }
+      }
+    } catch (Exception e) {
+      System.out.println(NAME + "Failed to leave CAN. Error: " + e);
+    }
+
+    this.joined = false;
 
     System.out.println(NAME + "Left CAN!");
 
@@ -182,7 +211,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         System.out.println(NAME + kv + " inserted!");
         this.printPeerAndRoute(result);
       } catch (Exception e) {
-        System.out.println(NAME + "Failed to insert" + kv + ". Error: " + e);
+        System.out.println(NAME + "Failed to insert " + kv + ". Error: " + e);
       }
     }
   }
@@ -246,14 +275,21 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
   }
 
   @Override
+  public void mergeZone(Zone zone) throws RemoteException {
+    if (this.zone.canMerge(zone)) {
+      this.zone.merge(zone);
+    } else {
+      // check temp zones...
+    }
+  }
+
+  @Override
   public JoinResult joinCAN(String peerId, String ip, Point point)
       throws RemoteException {
 
     if (this.containsPoint(point)) {
 
       if (this.zone.contains(point)) {
-
-        // TODO(zxi) update neighbor info...
 
         Zone newZone = this.zone.split();
         List<Neighbor> newNeighbors = new ArrayList<>();
@@ -378,9 +414,11 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
           content);
       return result;
     } else {
-
+      Node n = this.getNearestNeighbor(point);
+      InsertResult result = n.insertCAN(key, content);
+      result.prependRoute(this.ip);
+      return result;
     }
-    return null;
   }
 
   // End of Node's method

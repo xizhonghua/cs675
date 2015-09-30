@@ -116,7 +116,30 @@ public class Zone extends Rectangle implements Serializable {
   }
 
   /**
-   * Merge the given zone to this zone.
+   * Check whether a given zone can be merged to this zone
+   * 
+   * @param zone
+   *          zone to merge
+   * @return
+   */
+  public boolean canMerge(Zone zone) {
+
+    if (!this.getSize().equals(zone.getSize()))
+      return false;
+
+    if ((this.x != zone.x && this.y != zone.y)
+        || (this.x == zone.x && this.y + this.height != zone.y
+            && zone.y + zone.height != this.y)
+        || (this.y == zone.y && this.x + this.width != zone.x
+            && zone.x + zone.width != this.x))
+      return false;
+
+    return true;
+  }
+
+  /**
+   * Merge the given zone to this zone. Files managed by the zone will also be
+   * merged
    * 
    * @param zone
    *          the zone to be merged
@@ -125,25 +148,16 @@ public class Zone extends Rectangle implements Serializable {
    */
   public void merge(Zone zone) {
 
-    if (!this.getSize().equals(zone.getSize()))
-      throw new IllegalArgumentException(
-          "Can not merge zones with different sizes.");
-
-    if ((this.x != zone.x && this.y != zone.y)
-        || (this.x == zone.x && this.y + this.height != zone.y
-            && zone.y + zone.height != this.y)
-        || (this.y == zone.y && this.x + this.width != zone.x
-            && zone.x + zone.width != this.x))
+    if (!this.canMerge(zone))
       throw new IllegalArgumentException("Can not merge nonadjacent zones.");
 
     // Merge zone
     this.setBounds(this.union(zone));
 
-    // // Merge files
-    // this.files.addAll(zone.files);
-
-    // Merge neighbors
-    // this.neighbors.addAll(zone.neighbors);
+    // Merge files
+    for (String key : zone.files.keySet()) {
+      this.files.put(key, zone.files.get(key));
+    }
   }
 
   /**
