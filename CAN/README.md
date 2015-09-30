@@ -13,7 +13,7 @@ On the machine you want to start the peer, run the following script first to sta
 ./start_registry.sh
 ```
 
-#### Start Peer on Medusa Cluster
+#### Start Peers on Medusa Cluster
 
 Pre-defined peers can be easliy started using the following shortcuts:
 ```bash
@@ -30,7 +30,7 @@ java -Djava.security.policy=java.policy \
      -Djava.rmi.server.codebase=file:./src \
      -classpath ./src \
      org.xiaohuahua.can.NodeServer \
-     peerName [bootstrapServerAddress bootstrapServerName]
+     peerId [bootstrapServerAddress bootstrapServerName]
 ```
 
 #### Commands
