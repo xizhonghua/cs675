@@ -23,7 +23,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
    * 
    */
   private static final long serialVersionUID = 1L;
-
+  
+  private String host;
+  
   private String peerId;
 
   private String ip;
@@ -41,11 +43,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
   private List<Neighbor> neighbors;
 
-  public NodeImpl(String peerId, String ip, Bootstrap bootstrap)
+  public NodeImpl(String peerId, String host, String ip, Bootstrap bootstrap)
       throws RemoteException {
     super();
     this.peerId = peerId;
+    this.host = host;
     this.ip = ip;
+    
     this.zone = new Zone(0, 0, Config.ZONE_SIZE, Config.ZONE_SIZE);
     this.bootstrap = bootstrap == null ? (Bootstrap) this : bootstrap;
     this.random = new Random(new Date().getTime());
@@ -178,6 +182,11 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
           break;
         case "leave":
           this.leave();
+          break;
+        case "exit":
+          if (this.joined)
+            this.leave();
+          System.exit(0);
           break;
         case "help":
           printHelp();
@@ -501,18 +510,19 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
   private void view() {
     System.out.println("--------------------------------");
     System.out.println("View");
-    System.out.println("peerId = " + this.peerId);
-    System.out.println("ip = " + this.ip);
-    System.out.println("Zone = " + this.zone.toString());
+    System.out.println("peerId    = " + this.peerId);
+    System.out.println("host      = " + this.host);
+    System.out.println("ip        = " + this.ip);
+    System.out.println("Zone      = " + this.zone.toString());
     System.out.println("Neighbors = ");
     for (Neighbor neighbor : this.neighbors)
-      System.out.println("\t" + neighbor);
-    System.out.println("Files = ");
+      System.out.println("  " + neighbor);
+    System.out.println("Files     = ");
     for (String key : this.zone.getKeySet()) {
       List<String> contents = this.zone.getFiles(key);
-      System.out.println("\tKey = \"" + key + "\"");
+      System.out.println("  Key = \"" + key + "\"");
       for (String content : contents) {
-        System.out.println("\t\tContent = \"" + content + "\"");
+        System.out.println("    Content = \"" + content + "\"");
       }
     }
     System.out.println("--------------------------------");
@@ -562,35 +572,4 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
     return nodeList;
   }
-
-  // @Override
-  // public boolean join(String peerId, String ip) throws RemoteException {
-  //
-  // if (nodes.containsKey(peerId)) {
-  // if (!nodes.get(peerId).equals(ip)) {
-  // throw new RemoteException("peer \"" + peerId + "\" alredy exists.");
-  // } else {
-  // throw new RemoteException("peer \"" + peerId + "\" alredy joined.");
-  // }
-  // } else {
-  // nodes.put(peerId, ip);
-  // System.out.println(NAME + peerId + "@" + ip + " joined CAN!");
-  // System.out
-  // .println(NAME + this.nodes.keySet().size() + " node(s) in CAN.");
-  // return true;
-  // }
-  // }
-  //
-  // @Override
-  // public boolean leave(String peerId) throws RemoteException {
-  // if (!nodes.containsKey(peerId)) {
-  // throw new RemoteException("peer \"" + peerId + "\" does not exists.");
-  // } else {
-  // String ip = nodes.remove(peerId);
-  // System.out.println(NAME + peerId + "@" + ip + " left CAN!");
-  // System.out
-  // .println(NAME + this.nodes.keySet().size() + " node(s) in CAN.");
-  // return true;
-  // }
-  // }
 }

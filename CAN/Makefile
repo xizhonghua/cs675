@@ -2,11 +2,11 @@ SRC = ./src
 SRCS = $(shell find $(SRC) -name *.java)
 CLASSES = $(SRCS:.java=.class)
 NODE_CLASS = org.xiaohuahua.can.NodeServer
-BOOTSTRAP_CLASS = org.xiaohuahua.can.BootstrapServer
 BOOTSTRAP_SERVER = localhost
-BOOTSTRAP_NODE1 = node1
-BOOTSTRAP_NODE2 = node2
-BOOTSTRAP_NODE3 = node3
+NODE1_NAME = node1
+NODE2_NAME = node2
+NODE3_NAME = node3
+NODE4_NAME = node4
 
 JC = javac
 JFLAGS = -g -classpath $(SRC)
@@ -34,13 +34,13 @@ backup:
 	tar -c -f src.tar src/*
 
 run-node1: classes
-	$(RUN_NODE) node1
+	$(RUN_NODE) ${NODE1_NAME}
 
 run-node2: classes
-	$(RUN_NODE) node2 ${BOOTSTRAP_SERVER} ${BOOTSTRAP_NODE1}
+	$(RUN_NODE) ${NODE2_NAME} ${BOOTSTRAP_SERVER} ${NODE1_NAME}
 
 run-node3: classes
-	$(RUN_NODE) node3 ${BOOTSTRAP_SERVER} ${BOOTSTRAP_NODE1}
+	$(RUN_NODE) ${NODE3_NAME} ${BOOTSTRAP_SERVER} ${NODE1_NAME}
 
 run-node4: classes
-	$(RUN_NODE) node4 ${BOOTSTRAP_SERVER} ${BOOTSTRAP_NODE1}
+	$(RUN_NODE) ${NODE4_NAME} ${BOOTSTRAP_SERVER} ${NODE1_NAME}

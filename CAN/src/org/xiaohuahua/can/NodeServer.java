@@ -23,6 +23,7 @@ public class NodeServer {
 
       System.out.println("[INFO] hostname = " + localhost.getHostName());
       System.out.println("[INFO] ip = " + ip);
+      System.out.println("[INFO] peerId = " + peerId);
 
       String nodeServiceName = Config.NODE_SERVICE_NAME_PREFIX + peerId;
 
@@ -48,7 +49,8 @@ public class NodeServer {
         }
       }
 
-      NodeImpl node = new NodeImpl(peerId, ip, bootstrap);
+      NodeImpl node = new NodeImpl(peerId, localhost.getHostName(), ip,
+          bootstrap);
 
       System.out.println("[NodeServer] Registering Node Service "
           + nodeServiceName + " @ " + ip);
