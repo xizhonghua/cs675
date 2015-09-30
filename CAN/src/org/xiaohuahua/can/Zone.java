@@ -52,6 +52,7 @@ public class Zone extends Rectangle implements Serializable {
   /**
    * Check whether the zone contains the given point
    */
+  @Override
   public boolean contains(Point point) {
     return (point.x >= this.x && point.y >= this.y
         && point.x < this.x + this.width && point.y < this.y + this.height);

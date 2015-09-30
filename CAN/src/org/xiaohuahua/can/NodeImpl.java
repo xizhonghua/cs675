@@ -2,10 +2,10 @@ package org.xiaohuahua.can;
 
 import java.awt.Point;
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Serializable;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -20,10 +20,11 @@ import java.util.Scanner;
 
 import org.xiaohuahua.can.util.HashUtil;
 
-public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
+public class NodeImpl extends UnicastRemoteObject
+    implements Node, Bootstrap, Serializable {
 
   public static final String NAME_NODE = "[Node] ";
-  public static final String NAME_BOOTSTRAP = "[Bootstrap]";
+  public static final String NAME_BOOTSTRAP = "[Bootstrap] ";
 
   public static final String ANSI_RESET = "\u001B[0m";
   public static final String ANSI_BLACK = "\u001B[30m";
@@ -49,9 +50,14 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
   private boolean joined;
 
   /**
-   * Zone owned by current Node
+   * Zone owned by current node
    */
   private Zone zone;
+
+  /**
+   * Temporary zones owned by current node
+   */
+  private List<Zone> tempZones;
 
   private Bootstrap bootstrap;
 
@@ -62,13 +68,18 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
   public NodeImpl(String peerId, String host, String ip, Bootstrap bootstrap)
       throws RemoteException {
     super();
+
+    this.random = new Random(new Date().getTime());
+
     this.peerId = peerId;
     this.host = host;
     this.ip = ip;
 
     this.zone = new Zone(0, 0, Config.ZONE_SIZE, Config.ZONE_SIZE);
+    this.tempZones = new ArrayList<>();
+
     this.bootstrap = bootstrap == null ? (Bootstrap) this : bootstrap;
-    this.random = new Random(new Date().getTime());
+
     this.joined = false;
     this.neighbors = new ArrayList<>();
   }
@@ -105,6 +116,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
         Map<String, String> nodes = this.bootstrap.getNodeList(this.peerId,
             this.ip);
+
+        System.out.println(NAME_NODE + "Got node list " + nodes);
 
         Point point = new Point(random.nextInt(Config.ZONE_SIZE),
             random.nextInt(Config.ZONE_SIZE));
@@ -143,6 +156,53 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
     return joined;
   }
 
+  /**
+   * Migrate a given zone to its neighbor
+   * 
+   * @param zone
+   *          zone to migrate
+   * @return true, if migrated, false otherwise
+   * @throws RemoteException
+   */
+  private boolean migrateZone(Zone zone) throws RemoteException {
+    // Step 2: update zones/neighbors
+    for (Neighbor nb : this.neighbors) {
+      boolean canMerge = false;
+
+      // can be directly merged
+      if (nb.getZone().canMerge(zone)) {
+        canMerge = true;
+      }
+
+      // can be merged to a temp zone
+      // could this happen?
+
+      // TODO(zxi) check temp zones...
+
+      if (canMerge) {
+        // Step 2.1 Merge current zone to a new node
+        Node node = this.getNode(nb);
+        node.mergeZone(zone);
+
+        // Step 2.2 Notify current neighbors
+        for (Neighbor enb : this.neighbors) {
+
+          Node enode = this.getNode(enb);
+
+          // Step 2.2.1 Notify existing neighbors to remove myself
+          enode.removeNeighbor(this.asNeighbor());
+          // Step 2.2.2 Notify existing neighbors to add new neighbor
+          if (!enb.equals(nb))
+            enode.addOrUpdateNeighbor(nb);
+        }
+      }
+
+      break;
+    }
+
+    return false;
+  }
+
   public boolean leave() {
 
     if (!joined) {
@@ -154,28 +214,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
       System.out.println(NAME_NODE + "Leaving CAN...");
 
-      // Step 2: update zones/neighbors
-      for (Neighbor nb : this.neighbors) {
-        if (nb.getZone().canMerge(this.zone)) {
-          // Step 2.1 Merge current zone to a new node
-          Node node = this.getNode(nb);
-          node.mergeZone(this.zone);
+      boolean selfZoneMerged = this.migrateZone(this.zone);
 
-          // Step 2.2 Notify current neighbors
-          for (Neighbor enb : this.neighbors) {
-
-            Node enode = this.getNode(enb);
-
-            // Step 2.2.1 Notify existing neighbors to remove myself
-            enode.removeNeighbor(this.asNeighbor());
-            // Step 2.2.2 Notify existing neighbors to add new neighbor
-            if (!enb.equals(nb))
-              enode.addOrUpdateNeighbor(nb);
-          }
-
-          break;
-        }
-      }
     } catch (Exception e) {
       System.out.println(NAME_NODE + "Failed to leave CAN. Error: " + e);
       e.printStackTrace();
@@ -359,65 +399,102 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
     this.view(false);
   }
 
+  /**
+   * update zones/neighbors for a given new zone
+   * 
+   * @param newZone
+   * @return new neighbors
+   * @throws RemoteException
+   */
+  private List<Neighbor> updateZone(String peerId, String ip, Zone newZone)
+      throws RemoteException {
+
+    // new neighbor for the new zone
+    List<Neighbor> newNeighbors = new ArrayList<>();
+
+    // neighbor to remove for current (main zone U temp zone)
+    List<Neighbor> neighborsToRemove = new ArrayList<>();
+
+    for (Neighbor nb : this.neighbors) {
+      if (nb.getZone().isNeighbor(newZone))
+        newNeighbors.add(nb);
+      if (!nb.getZone().isNeighbor(this.zone))
+        neighborsToRemove.add(nb);
+    }
+
+    // Remove neighbor
+    for (Neighbor nb : neighborsToRemove) {
+      Node node = this.getNode(nb);
+      node.removeNeighbor(this.asNeighbor());
+      System.out.println(NAME_NODE + nb.getName() + " notifyed!");
+    }
+
+    // Update zone info for neighbors
+    for (Neighbor nb : this.neighbors) {
+      Node node = this.getNode(nb);
+      node.addOrUpdateNeighbor(this.asNeighbor());
+      System.out.println(NAME_NODE + nb.getName() + " notifyed!");
+    }
+
+    Neighbor neighbor = new Neighbor(peerId, ip, newZone);
+
+    // add each other as neighbor
+    this.addOrUpdateNeighbor(neighbor);
+    newNeighbors.add(this.asNeighbor());
+
+    // Notify new node neighbor entered
+    for (Neighbor nb : newNeighbors) {
+      Node node = this.getNode(nb);
+      node.addOrUpdateNeighbor(neighbor);
+      System.out.println(NAME_NODE + nb.getName() + " notifyed!");
+    }
+
+    return newNeighbors;
+  }
+
   @Override
   public JoinResult joinCAN(String peerId, String ip, Point point)
       throws RemoteException {
 
     if (this.containsPoint(point)) {
 
+      Zone newZone = null;
+
+      // if the target point is in main zone
       if (this.zone.contains(point)) {
 
-        Zone newZone = this.zone.split();
-        List<Neighbor> newNeighbors = new ArrayList<>();
-        List<Neighbor> neighborsToRemove = new ArrayList<>();
+        // slip the main zone
+        newZone = this.zone.split();
 
-        for (Neighbor nb : this.neighbors) {
-          if (nb.getZone().isNeighbor(newZone))
-            newNeighbors.add(nb);
-          if (!nb.getZone().isNeighbor(this.zone))
-            neighborsToRemove.add(nb);
-        }
-
-        // Remove neighbor
-        for (Neighbor nb : neighborsToRemove) {
-          Node node = this.getNode(nb);
-          node.removeNeighbor(this.asNeighbor());
-          System.out.println(NAME_NODE + nb.getName() + " notifyed!");
-        }
-
-        // Update zone info for neighbors
-        for (Neighbor nb : this.neighbors) {
-          Node node = this.getNode(nb);
-          node.addOrUpdateNeighbor(this.asNeighbor());
-          System.out.println(NAME_NODE + nb.getName() + " notifyed!");
-        }
-
-        Neighbor neighbor = new Neighbor(peerId, ip, newZone);
-
-        // add each other as neighbor
-        this.addOrUpdateNeighbor(neighbor);
-        newNeighbors.add(this.asNeighbor());
-
-        // Notify new node neighbor entered
-        for (Neighbor nb : newNeighbors) {
-          Node node = this.getNode(nb);
-          node.addOrUpdateNeighbor(neighbor);
-          System.out.println(NAME_NODE + nb.getName() + " notifyed!");
-        }
-
-        this.view(false);
-
-        // generate the result
-        JoinResult result = new JoinResult(this.peerId, this.ip, newZone,
-            newNeighbors);
-
-        return result;
       } else {
 
-        this.view(false);
-        // TODO(zxi) migrate zone
-        return null;
+        // if the target point is in a temp zone
+        for (Zone tempZone : this.tempZones) {
+
+          if (!tempZone.contains(point))
+            continue;
+
+          // remove from this
+          this.tempZones.remove(tempZone);
+
+          // migrate the entire temp zone
+          newZone = tempZone;
+
+          break;
+        }
       }
+
+      // update zone info
+      List<Neighbor> newNeighbors = this.updateZone(peerId, ip, newZone);
+
+      this.view(false);
+
+      // generate the result
+      JoinResult result = new JoinResult(this.peerId, this.ip, newZone,
+          newNeighbors);
+
+      return result;
+
     } else {
       Node n = this.getNearestNeighbor(point);
       JoinResult result = n.joinCAN(peerId, ip, point);
@@ -425,6 +502,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
       return result;
     }
+
   }
 
   @Override
@@ -536,8 +614,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
       Node node = (Node) Naming.lookup(uri);
       return node;
     } catch (Exception e) {
-      System.out.println("[NodeServer] Failed to get remote node " + peerId
+      System.out.println(NAME_NODE + "Failed to get remote node " + peerId
           + " @ " + ip + ". Error: " + e);
+      e.printStackTrace();
       return null;
     }
   }
@@ -592,7 +671,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
   // view self
   private void view(boolean fromShell) {
     System.out.print(ANSI_GREEN);
-    System.out.println("--------------------------------");
+    System.out.println("--------------------------------------------------");
     System.out.println("| View");
     System.out.println("| peerId    = " + this.peerId);
     System.out.println("| host      = " + this.host);
@@ -609,7 +688,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
         System.out.println("|    Content = \"" + content + "\"");
       }
     }
-    System.out.println("--------------------------------");
+    System.out.println("--------------------------------------------------");
     System.out.print(ANSI_RESET);
 
     if (!fromShell)
@@ -643,10 +722,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
     int nodesToReturn = Math.min(this.neighbors.size(), MAX_NODES - 1);
 
+    System.out.println(NAME_BOOTSTRAP + "Current neighbor size = "
+        + this.neighbors.size() + " nodes to return = " + nodesToReturn);
+
     Map<String, String> nodeList = new HashMap<>();
     Random r = new Random(new Date().getTime());
 
-    while (nodeList.size() < nodesToReturn) {
+    while (nodeList.keySet().size() < nodesToReturn) {
       int index = r.nextInt(this.neighbors.size());
       Neighbor nb = this.neighbors.get(index);
       if (nodeList.containsKey(nb.getPeerId()))
@@ -657,6 +739,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
     // Add it self into list
 
     nodeList.put(this.getPeerId(), this.getIP());
+
+    System.out.println(NAME_BOOTSTRAP + "response node list = " + nodeList);
 
     return nodeList;
   }
