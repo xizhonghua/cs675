@@ -165,7 +165,7 @@ public class NodeImpl extends UnicastRemoteObject
    * @throws RemoteException
    */
   private boolean migrateZone(Zone zone) throws RemoteException {
-    // Step 2: update zones/neighbors
+
     for (Neighbor nb : this.neighbors) {
       boolean canMerge = false;
 
@@ -194,11 +194,35 @@ public class NodeImpl extends UnicastRemoteObject
           // Step 2.2.2 Notify existing neighbors to add new neighbor
           if (!enb.equals(nb))
             enode.addOrUpdateNeighbor(nb);
-        }
-      }
 
-      break;
+        }
+
+        return true;
+      } // end of if (canMerge)
     }
+
+    System.out.print(ANSI_RED);
+    System.out
+        .println(NAME_NODE + "Current zone can't be merged! Zone = " + zone);
+
+    Node smNode = this.getSmallestNeightbor();
+    smNode.addTempZone(zone);
+    Neighbor smNeighbor = smNode.asNeighbor();
+
+    // notify neighbors
+    for (Neighbor nb : this.neighbors) {
+      if (nb.getZone().isNeighbor(zone)) {
+        Node node = this.getNode(nb);
+        node.removeNeighbor(this.asNeighbor());
+
+        if (smNeighbor.equals(nb))
+          continue;
+
+        node.addOrUpdateNeighbor(smNeighbor);
+      }
+    }
+
+    System.out.print(ANSI_RESET);
 
     return false;
   }
@@ -214,21 +238,16 @@ public class NodeImpl extends UnicastRemoteObject
 
       System.out.println(NAME_NODE + "Leaving CAN...");
 
-      boolean selfZoneMerged = this.migrateZone(this.zone);
+      System.out.println(NAME_NODE + "Migrating main zone...");
 
-      if (!selfZoneMerged) {
+      if (this.tempZones.size() > 0) {
+        System.out.print(NAME_NODE + "Migrating temp zones...");
 
-        System.out.print(ANSI_RED);
-        System.out.println(NAME_NODE + "Current zone can't be merged!");
-
-        Node nb = this.getSmallestNeightbor();
-
-        nb.addTempZone(this.zone);
-        // add neighbors
-
-        System.out.print(ANSI_RESET);
-
+        for (Zone tmpZone : this.tempZones)
+          this.migrateZone(tmpZone);
       }
+
+      this.migrateZone(this.zone);
 
     } catch (Exception e) {
       System.out.println(NAME_NODE + "Failed to leave CAN. Error: " + e);
@@ -236,7 +255,8 @@ public class NodeImpl extends UnicastRemoteObject
     }
 
     this.joined = false;
-    this.neighbors.clear();
+    this.zone = null;
+    this.neighbors = null;
 
     System.out.println(NAME_NODE + "Left CAN!");
 
@@ -286,7 +306,8 @@ public class NodeImpl extends UnicastRemoteObject
       printHelp();
       break;
     default:
-      System.out.println(">>> Unknown command:" + parameters[0]);
+      if (parameters[0].length() > 0)
+        System.out.println(">>> Unknown command:" + parameters[0]);
       break;
     }
   }
@@ -403,13 +424,68 @@ public class NodeImpl extends UnicastRemoteObject
 
   @Override
   public void mergeZone(Zone zone) throws RemoteException {
+
+    System.out.println();
+
+    System.out.print(ANSI_YELLOW);
+    System.out.println(NAME_NODE + "Merging zone...");
+    System.out.println(NAME_NODE + "Zone to merge = " + zone);
+
     if (this.zone.canMerge(zone)) {
+      System.out.println(NAME_NODE + "Old Zone = " + this.zone);
       this.zone.merge(zone);
+      System.out.println(NAME_NODE + "New Zone = " + this.zone);
     } else {
-      // check temp zones...
+      for (Zone tmpZone : this.tempZones) {
+        if (tmpZone.canMerge(zone)) {
+          System.out.println(NAME_NODE + "Old Temp Zone = " + tmpZone);
+          tmpZone.merge(zone);
+          System.out.println(NAME_NODE + "New Temp Zone = " + tmpZone);
+        }
+      }
+    }
+
+    // Self merge
+    while (true) {
+      boolean selfMergeable = false;
+
+      // merge main zone with temp zone
+      for (Zone tmpZone : this.tempZones) {
+        if (tmpZone.canMerge(this.zone)) {
+          selfMergeable = true;
+          System.out.println(NAME_NODE + "Self merging...");
+          System.out.println(NAME_NODE + "Zone to merge = " + tmpZone);
+          System.out.println(NAME_NODE + "Old Zone = " + this.zone);
+          this.zone.merge(tmpZone);
+          System.out.println(NAME_NODE + "New Zone = " + this.zone);
+          this.tempZones.remove(tmpZone);
+          break;
+        }
+      }
+
+      // merge temp zone with temp zone
+      for (Zone tmpZone1 : this.tempZones) {
+        for (Zone tmpZone2 : this.tempZones) {
+          if (tmpZone1 == tmpZone2)
+            continue;
+          if (tmpZone1.canMerge(tmpZone2)) {
+            selfMergeable = true;
+            System.out.println(NAME_NODE + "Self merging...");
+            System.out.println(NAME_NODE + "Zone to merge = " + tmpZone2);
+            System.out.println(NAME_NODE + "Old Tmp Zone = " + this.zone);
+            tmpZone1.merge(tmpZone2);
+            System.out.println(NAME_NODE + "New Tmp Zone = " + this.zone);
+            this.tempZones.remove(tmpZone2);
+          }
+        }
+      }
+
+      if (!selfMergeable)
+        break;
     }
 
     System.out.println(NAME_NODE + "Zone merged!");
+    System.out.print(ANSI_RESET);
     this.view(false);
   }
 
