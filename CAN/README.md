@@ -7,7 +7,7 @@ make
 ```
 
 #### Start RMI Registry
-On the machine you want to start the peer, run the following script first to start registry 
+On the machine you want to start peers, run the following script first to start registry 
 ```bash
 ./stop_registry.sh
 ./start_registry.sh
@@ -15,7 +15,7 @@ On the machine you want to start the peer, run the following script first to sta
 
 #### Start Peers on Medusa Cluster
 
-Pre-defined peers can be easliy started using the following shortcuts:
+Pre-defined peers for Medusa Cluster can be easliy started using the following command:
 ```bash
 make run-peer[1-6]
 ```
@@ -33,7 +33,7 @@ java -Djava.security.policy=java.policy \
      peerId [bootstrapServerAddress bootstrapServerName]
 ```
 
-#### Commands
+#### CLI
 Once a node is started, the following commands can be used to interactive with the node.
 
 | Command | Arguments    | Comment                     |
