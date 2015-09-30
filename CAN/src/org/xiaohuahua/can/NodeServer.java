@@ -20,8 +20,9 @@ public class NodeServer {
 
       InetAddress localhost = InetAddress.getLocalHost();
       String ip = localhost.getHostAddress();
+      String host = localhost.getCanonicalHostName();
 
-      System.out.println("[INFO] hostname = " + localhost.getHostName());
+      System.out.println("[INFO] hostname = " + host);
       System.out.println("[INFO] ip = " + ip);
       System.out.println("[INFO] peerId = " + peerId);
 
@@ -49,7 +50,7 @@ public class NodeServer {
         }
       }
 
-      NodeImpl node = new NodeImpl(peerId, localhost.getHostName(), ip,
+      NodeImpl node = new NodeImpl(peerId, host, ip,
           bootstrap);
 
       System.out.println("[NodeServer] Registering Node Service "
