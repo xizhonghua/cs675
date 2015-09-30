@@ -6,6 +6,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -13,9 +14,10 @@ import java.util.Scanner;
 
 import org.xiaohuahua.can.util.HashUtil;
 
-public class NodeImpl extends UnicastRemoteObject implements Node {
+public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
-  public static final String NAME = "[Node] ";
+  public static final String NAME_NODE = "[Node] ";
+  public static final String NAME_BOOTSTRAP = "[Bootstrap]";
 
   /**
    * 
@@ -45,13 +47,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     this.peerId = peerId;
     this.ip = ip;
     this.zone = new Zone(0, 0, Config.ZONE_SIZE, Config.ZONE_SIZE);
-    this.bootstrap = bootstrap;
+    this.bootstrap = bootstrap == null ? (Bootstrap) this : bootstrap;
     this.random = new Random(new Date().getTime());
     this.joined = false;
     this.neighbors = new ArrayList<>();
   }
 
-  public String getId() {
+  public String getPeerId() {
     return this.peerId;
   }
 
@@ -71,18 +73,14 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
     try {
 
-      //
-      Map<String, String> nodes = this.bootstrap.getNodeList(this.peerId,
-          this.ip);
-
-      if (nodes.size() == 0) {
-        System.out.println(NAME + "1st node in CAN!");
-        this.bootstrap.join(this.peerId, this.ip);
-
+      if (this.bootstrap == this) {
+        System.out.println(NAME_NODE + "1st node in CAN!");
         this.joined = true;
-      }
+      } else {
 
-      else {
+        Map<String, String> nodes = this.bootstrap.getNodeList(this.peerId,
+            this.ip);
+
         Point point = new Point(random.nextInt(Config.ZONE_SIZE),
             random.nextInt(Config.ZONE_SIZE));
 
@@ -99,9 +97,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
           this.zone = result.getNewZone();
           this.neighbors = result.getNewNeighbors();
 
-          // notify bootstrap
-          this.bootstrap.join(this.peerId, this.ip);
-
           this.joined = true;
 
           this.printPeerAndRoute(result);
@@ -111,11 +106,11 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
       }
 
     } catch (Exception e) {
-      System.out.println(NAME + "Failed to join CAN. Error: " + e);
+      System.out.println(NAME_NODE + "Failed to join CAN. Error: " + e);
     }
 
     if (joined) {
-      System.out.println(NAME + "CAN joined!");
+      System.out.println(NAME_NODE + "CAN joined!");
 
       this.view();
     }
@@ -124,13 +119,6 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
   }
 
   public boolean leave() {
-
-    // Step 1: notify bootstrap node
-    try {
-      bootstrap.leave(this.peerId);
-    } catch (Exception e) {
-      System.out.println(NAME + "Failed to leave CAN. Error: " + e);
-    }
 
     try {
 
@@ -157,12 +145,13 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         }
       }
     } catch (Exception e) {
-      System.out.println(NAME + "Failed to leave CAN. Error: " + e);
+      System.out.println(NAME_NODE + "Failed to leave CAN. Error: " + e);
     }
 
     this.joined = false;
+    this.neighbors.clear();
 
-    System.out.println(NAME + "Left CAN!");
+    System.out.println(NAME_NODE + "Left CAN!");
 
     return true;
   }
@@ -208,10 +197,12 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
       try {
         InsertResult result = this.insertCAN(key, content);
-        System.out.println(NAME + kv + " inserted!");
+        System.out.println(NAME_NODE + kv + " inserted!");
         this.printPeerAndRoute(result);
       } catch (Exception e) {
-        System.out.println(NAME + "Failed to insert " + kv + ". Error: " + e);
+        System.out
+            .println(NAME_NODE + "Failed to insert " + kv + ". Error: " + e);
+        e.printStackTrace();
       }
     }
   }
@@ -224,14 +215,15 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
 
       try {
         SearchResult result = this.searchCAN(key);
-        System.out.println(NAME + "Search results: matched files = "
+        System.out.println(NAME_NODE + "Search results: matched files = "
             + result.getFiles().size());
         System.out.println("\tkey = \"" + result.getKey() + "\"");
         for (String content : result.getFiles())
           System.out.println("\t\tContent = \"" + content + "\"");
         this.printPeerAndRoute(result);
       } catch (Exception e) {
-        System.out.println(NAME + "Failed to search" + key + ". Error: " + e);
+        System.out
+            .println(NAME_NODE + "Failed to search" + key + ". Error: " + e);
       }
     }
   }
@@ -281,6 +273,9 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     } else {
       // check temp zones...
     }
+
+    System.out.println(NAME_NODE + "Zone merged!");
+    this.view();
   }
 
   @Override
@@ -355,16 +350,16 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         // Update
         Neighbor oldNeighbor = this.neighbors.get(i);
         this.neighbors.set(i, neighbor);
-        System.out.println(
-            NAME + "Neighbor" + neighbor.getName() + "'s zone updated from "
-                + oldNeighbor.getZone() + " to " + neighbor.getZone());
+        System.out.println(NAME_NODE + "Neighbor" + neighbor.getName()
+            + "'s zone updated from " + oldNeighbor.getZone() + " to "
+            + neighbor.getZone());
         return;
       }
     }
 
     this.neighbors.add(neighbor);
-    System.out.println(NAME + "New neighbor added!");
-    System.out.println(NAME + "New neighbor = " + neighbor);
+    System.out.println(NAME_NODE + "New neighbor added!");
+    System.out.println(NAME_NODE + "New neighbor = " + neighbor);
   }
 
   @Override
@@ -374,8 +369,8 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
         // Update
         Neighbor oldNeighbor = this.neighbors.get(i);
         this.neighbors.remove(oldNeighbor);
-        System.out.println(NAME + "Neighbor removed");
-        System.out.println(NAME + "Removed neighbor = " + oldNeighbor);
+        System.out.println(NAME_NODE + "Neighbor removed");
+        System.out.println(NAME_NODE + "Removed neighbor = " + oldNeighbor);
         return;
       }
     }
@@ -430,8 +425,20 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
    * @param point
    * @return
    */
-  private Node getNearestNeighbor(Point point) {
-    return null;
+  private Node getNearestNeighbor(Point point) throws RemoteException {
+    double bestDist = Double.MAX_VALUE;
+    Node bestNode = null;
+
+    for (Neighbor nb : this.neighbors) {
+      Node node = this.getNode(nb);
+      double dist = node.distanceTo(point);
+      if (dist < bestDist) {
+        bestNode = node;
+        bestDist = dist;
+      }
+    }
+
+    return bestNode;
   }
 
   private Node getNode(Neighbor nb) {
@@ -477,14 +484,17 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     }
 
     // TODO(zxi) check temp zones...
+
+    System.out.println(
+        NAME_NODE + "new file {\"" + key + "\":\"" + content + "\"} inserted!");
   }
 
   private void printPeerAndRoute(ResultBase result) {
 
-    System.out.println(NAME + "Peer = " + result.getPeerId() + "@"
+    System.out.println(NAME_NODE + "Peer = " + result.getPeerId() + "@"
         + result.getRoutes().get(0));
 
-    System.out.println(NAME + "Route = " + result.getRoutes());
+    System.out.println(NAME_NODE + "Route = " + result.getRoutes());
   }
 
   // view self
@@ -519,4 +529,68 @@ public class NodeImpl extends UnicastRemoteObject implements Node {
     System.err.println("help                   | print this message");
   }
 
+  /**
+   * Max number of nodes in the returned list
+   */
+  private static final int MAX_NODES = 3;
+
+  private Map<String, String> nodes;
+
+  @Override
+  public Map<String, String> getNodeList(String peerId, String ip)
+      throws RemoteException {
+
+    System.out
+        .println(NAME_BOOTSTRAP + peerId + "@" + ip + " requested node list!");
+
+    int nodesToReturn = Math.min(this.neighbors.size(), MAX_NODES - 1);
+
+    Map<String, String> nodeList = new HashMap<>();
+    Random r = new Random(new Date().getTime());
+
+    while (nodeList.size() < nodesToReturn) {
+      int index = r.nextInt(this.neighbors.size());
+      Neighbor nb = this.neighbors.get(index);
+      if (nodeList.containsKey(nb.getPeerId()))
+        continue;
+      nodeList.put(nb.getPeerId(), nb.getIp());
+    }
+
+    // Add it self into list
+
+    nodeList.put(this.getPeerId(), this.getIP());
+
+    return nodeList;
+  }
+
+  // @Override
+  // public boolean join(String peerId, String ip) throws RemoteException {
+  //
+  // if (nodes.containsKey(peerId)) {
+  // if (!nodes.get(peerId).equals(ip)) {
+  // throw new RemoteException("peer \"" + peerId + "\" alredy exists.");
+  // } else {
+  // throw new RemoteException("peer \"" + peerId + "\" alredy joined.");
+  // }
+  // } else {
+  // nodes.put(peerId, ip);
+  // System.out.println(NAME + peerId + "@" + ip + " joined CAN!");
+  // System.out
+  // .println(NAME + this.nodes.keySet().size() + " node(s) in CAN.");
+  // return true;
+  // }
+  // }
+  //
+  // @Override
+  // public boolean leave(String peerId) throws RemoteException {
+  // if (!nodes.containsKey(peerId)) {
+  // throw new RemoteException("peer \"" + peerId + "\" does not exists.");
+  // } else {
+  // String ip = nodes.remove(peerId);
+  // System.out.println(NAME + peerId + "@" + ip + " left CAN!");
+  // System.out
+  // .println(NAME + this.nodes.keySet().size() + " node(s) in CAN.");
+  // return true;
+  // }
+  // }
 }

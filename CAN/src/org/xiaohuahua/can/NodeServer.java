@@ -7,47 +7,68 @@ public class NodeServer {
 
   public static void main(String[] args) {
 
-    if (args.length < 2) {
+    if (args.length < 1) {
       System.out.println("Usage: java " + NodeServer.class.getName()
-          + " bootstrapAddress peerId");
+          + "peerId [bootstrapAddress bootstrapId]");
       System.exit(-1);
     }
 
     try {
-
-      String bootstrapAddress = args[0];
-      String peerId = args[1];
-
       System.setSecurityManager(new SecurityManager());
 
-      String bootstrapUri = "rmi://" + bootstrapAddress + "/"
-          + Config.BOOTSTRAP_SERVICE_NAME;
+      String peerId = args[0];
+
+      InetAddress localhost = InetAddress.getLocalHost();
+      String ip = localhost.getHostAddress();
+
+      System.out.println("[INFO] hostname = " + localhost.getHostName());
+      System.out.println("[INFO] ip = " + ip);
 
       String nodeServiceName = Config.NODE_SERVICE_NAME_PREFIX + peerId;
 
       Bootstrap bootstrap = null;
 
-      try {
-        bootstrap = (Bootstrap) Naming.lookup(bootstrapUri);
-      } catch (Exception e) {
-        System.out.println("[NodeServer] Can not find bootstrap serivce @ "
-            + bootstrapAddress + " error: " + e);
+      String bootstrapAddress = null;
+      String bootstrapName = null;
+      if (args.length > 2) {
+        bootstrapAddress = args[1];
+        bootstrapName = args[2];
       }
 
-      InetAddress localhost = InetAddress.getLocalHost();
-      String ip = localhost.getHostAddress();
+      // boostrapAddress specified
+      if (bootstrapAddress != null) {
+        try {
+          String bootstrapUri = "rmi://" + bootstrapAddress + "/"
+              + Config.BOOTSTRAP_SERVICE_PREFIX + bootstrapName;
 
-      System.out.println("[NodeServer] Registering Node Service "
-          + nodeServiceName + " @ " + ip);
+          bootstrap = (Bootstrap) Naming.lookup(bootstrapUri);
+        } catch (Exception e) {
+          System.out.println("[NodeServer] Can not find bootstrap serivce @ "
+              + bootstrapAddress + " error: " + e);
+        }
+      }
 
       NodeImpl node = new NodeImpl(peerId, ip, bootstrap);
 
+      System.out.println("[NodeServer] Registering Node Service "
+          + nodeServiceName + " @ " + ip);
       Naming.rebind(nodeServiceName, node);
+
+      // bind this node as bootstrap service
+
+      String bootstrapServiceName = Config.BOOTSTRAP_SERVICE_PREFIX + peerId;
+      System.out.println("[NodeServer] Registering Bootstrap Service "
+          + bootstrapServiceName + " @ " + ip);
+      Naming.rebind(bootstrapServiceName, node);
 
       System.out.println("[NodeServer] Ready...");
 
       node.run();
-    } catch (Exception e) {
+    } catch (
+
+    Exception e)
+
+    {
       System.out
           .println("[NodeServer] Failed to register Bootstrap Service: " + e);
     }

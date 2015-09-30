@@ -52,31 +52,35 @@ public final class BootstrapImpl extends UnicastRemoteObject
     return output;
   }
 
-  @Override
-  public boolean join(String peerId, String ip) throws RemoteException {
-
-    if (nodes.containsKey(peerId)) {
-      if (!nodes.get(peerId).equals(ip)) {
-        throw new RemoteException("peer \"" + peerId + "\" alredy exists.");
-      } else {
-        throw new RemoteException("peer \"" + peerId + "\" alredy joined.");
-      }
-    } else {
-      nodes.put(peerId, ip);
-      System.out.println(NAME + peerId + "@" + ip + " joined CAN!");
-      return true;
-    }
-  }
-
-  @Override
-  public boolean leave(String peerId) throws RemoteException {
-    if (!nodes.containsKey(peerId)) {
-      throw new RemoteException("peer \"" + peerId + "\" does not exists.");
-    } else {
-      String ip = nodes.remove(peerId);
-      System.out.println(NAME + peerId + "@" + ip + " left CAN!");
-      return true;
-    }
-  }
+//  @Override
+//  public boolean join(String peerId, String ip) throws RemoteException {
+//
+//    if (nodes.containsKey(peerId)) {
+//      if (!nodes.get(peerId).equals(ip)) {
+//        throw new RemoteException("peer \"" + peerId + "\" alredy exists.");
+//      } else {
+//        throw new RemoteException("peer \"" + peerId + "\" alredy joined.");
+//      }
+//    } else {
+//      nodes.put(peerId, ip);
+//      System.out.println(NAME + peerId + "@" + ip + " joined CAN!");
+//      System.out
+//          .println(NAME + this.nodes.keySet().size() + " node(s) in CAN.");
+//      return true;
+//    }
+//  }
+//
+//  @Override
+//  public boolean leave(String peerId) throws RemoteException {
+//    if (!nodes.containsKey(peerId)) {
+//      throw new RemoteException("peer \"" + peerId + "\" does not exists.");
+//    } else {
+//      String ip = nodes.remove(peerId);
+//      System.out.println(NAME + peerId + "@" + ip + " left CAN!");
+//      System.out
+//          .println(NAME + this.nodes.keySet().size() + " node(s) in CAN.");
+//      return true;
+//    }
+//  }
 
 }
