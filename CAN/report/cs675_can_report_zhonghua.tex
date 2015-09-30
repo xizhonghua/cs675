@@ -1,0 +1,59 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+
+\title{CS675 Project 1: P2P Architecture}
+\author{Zhonghua Xi}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+
+\section{Design}
+\subsection{Peer}
+A peer node is both a client and server which provides both CAN node service and bootstrap service.
+
+\subsection{Routing}
+When the coordinate of a target point $p$ is given, the CAN system routes the message in the following manner.
+If current peer $P$'s zones contain $p$, $P$ processes the request. Otherwise $P$ forwards the request to its neighbor who is closest to $p$. The distance $D$ between a node $N$ and a point $p$ is defined as: 
+\begin{equation}
+D(N,p) = 
+\begin{cases}
+    0, 										& \text{if } N \text{'s zones contain } p \\
+ 	\min\limits_{i}(\lVert N.zone_i.center - p \rVert),      & \text{otherwise}
+\end{cases}
+\end{equation}
+The above distance metic guarantees the message will be routed to the node whose zones contain $p$.
+
+
+\section{Implementation}
+
+\subsection{Language}
+Java is chosen to implement this project since Java provides a lot of tools to deal with network communications.
+
+\subsection{Networking Technique}
+Java RMI is chosen as the networking technique. RMI can be regarded as an object-oriented version RPC which provides high level abstraction and low level of complexity.
+Request and response become function parameters and returned value. 
+The client will be blocked (by default) until receives the response. 
+Compare to a socket based implementation, in which request and response are not deeply-related, the client code in RMI is more semantically meaningful and more elegant.
+
+\subsection{Peer}
+When a peer is about to start, a bootstrap server (ip/hostname and name) must be provided. Otherwise, that peer will think it is the only node in CAN and will occupy the entire zone.
+The peer will provide both Node service (join, insert, search) and Bootstrap (get active node list). These two services are bind to different names.
+
+\subsubsection{Bootstrap Service}
+For a bootstrap server, it has only one remote method:
+
+\subsubsection{Node Service}
+
+
+
+
+\end{document}  

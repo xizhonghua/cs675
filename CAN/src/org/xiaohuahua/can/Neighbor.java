@@ -36,7 +36,7 @@ public class Neighbor implements Serializable {
 
   public Zone getZone() {
     return (Zone) this.zone.clone();
-  }
+  }  
 
   @Override
   public String toString() {
