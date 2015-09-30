@@ -44,3 +44,10 @@ Once a node is started, the following commands can be used to interactive with t
 | search  | key          | search content by key       |
 | leave   |              | leave CAN                   |
 | exit    |              | leave CAN and exit          |
+
+
+#### Start Peers on Single Machine
+Pre-defined peers can be started on a single machine using the following command:
+```bash
+make run-local-peer[1-6]
+```
