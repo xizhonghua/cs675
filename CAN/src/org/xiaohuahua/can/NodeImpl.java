@@ -216,6 +216,20 @@ public class NodeImpl extends UnicastRemoteObject
 
       boolean selfZoneMerged = this.migrateZone(this.zone);
 
+      if (!selfZoneMerged) {
+
+        System.out.print(ANSI_RED);
+        System.out.println(NAME_NODE + "Current zone can't be merged!");
+
+        Node nb = this.getSmallestNeightbor();
+
+        nb.addTempZone(this.zone);
+        // add neighbors
+
+        System.out.print(ANSI_RESET);
+
+      }
+
     } catch (Exception e) {
       System.out.println(NAME_NODE + "Failed to leave CAN. Error: " + e);
       e.printStackTrace();
@@ -397,6 +411,20 @@ public class NodeImpl extends UnicastRemoteObject
 
     System.out.println(NAME_NODE + "Zone merged!");
     this.view(false);
+  }
+
+  @Override
+  public void addTempZone(Zone zone) throws RemoteException {
+
+    this.tempZones.add(zone);
+
+    System.out.println();
+    System.out.print(ANSI_RED);
+
+    System.out.println(NAME_NODE + "Temp zone added! temp zone = " + zone);
+
+    System.out.println(ANSI_RESET);
+    System.out.print(">>> ");
   }
 
   /**
@@ -582,6 +610,28 @@ public class NodeImpl extends UnicastRemoteObject
   //////////////////////////////////////////////////////////////////////////////
 
   /**
+   * Get the neighbor with the smallest zone area
+   * 
+   * @return
+   * @throws RemoteException
+   */
+  private Node getSmallestNeightbor() throws RemoteException {
+    double minArea = Double.MAX_VALUE;
+    Neighbor minNB = null;
+
+    for (Neighbor nb : this.neighbors) {
+      double area = nb.getZone().getWidth() * nb.getZone().getHeight();
+
+      if (area < minArea) {
+        minNB = nb;
+        minArea = area;
+      }
+    }
+
+    return this.getNode(minNB);
+  }
+
+  /**
    * Get the neighbor which is the closest to a given point
    * 
    * @param point
@@ -676,18 +726,24 @@ public class NodeImpl extends UnicastRemoteObject
     System.out.println("| peerId    = " + this.peerId);
     System.out.println("| host      = " + this.host);
     System.out.println("| ip        = " + this.ip);
-    System.out.println("| Zone      = " + this.zone.toString());
-    System.out.println("| Neighbors = ");
-    for (Neighbor neighbor : this.neighbors)
-      System.out.println("|  " + neighbor);
-    System.out.println("| Files     = ");
-    for (String key : this.zone.getKeySet()) {
-      List<String> contents = this.zone.getFiles(key);
-      System.out.println("|  Key = \"" + key + "\"");
-      for (String content : contents) {
-        System.out.println("|    Content = \"" + content + "\"");
+
+    if (this.joined) {
+      // only valid when joined
+      System.out.println("| Zone      = " + this.zone.toString());
+      System.out.println("| Temp zons = " + this.tempZones);
+      System.out.println("| Neighbors = ");
+      for (Neighbor neighbor : this.neighbors)
+        System.out.println("|  " + neighbor);
+      System.out.println("| Files     = ");
+      for (String key : this.zone.getKeySet()) {
+        List<String> contents = this.zone.getFiles(key);
+        System.out.println("|  Key = \"" + key + "\"");
+        for (String content : contents) {
+          System.out.println("|    Content = \"" + content + "\"");
+        }
       }
     }
+
     System.out.println("--------------------------------------------------");
     System.out.print(ANSI_RESET);
 

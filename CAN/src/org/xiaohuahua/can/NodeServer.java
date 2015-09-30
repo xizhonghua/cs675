@@ -50,8 +50,7 @@ public class NodeServer {
         }
       }
 
-      NodeImpl node = new NodeImpl(peerId, host, ip,
-          bootstrap);
+      NodeImpl node = new NodeImpl(peerId, host, ip, bootstrap);
 
       System.out.println("[NodeServer] Registering Node Service "
           + nodeServiceName + " @ " + ip);
@@ -66,6 +65,7 @@ public class NodeServer {
 
       System.out.println("[NodeServer] Ready...");
 
+      node.join();
       node.run();
     } catch (
 

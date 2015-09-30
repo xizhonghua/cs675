@@ -33,6 +33,15 @@ public interface Node extends Remote {
   public void mergeZone(Zone zone) throws RemoteException;
 
   /**
+   * Add a temp zone
+   * 
+   * @param zone
+   *          temp zone to add
+   * @throws RemoteException
+   */
+  public void addTempZone(Zone zone) throws RemoteException;
+
+  /**
    * Get neighbor representation of current node
    * 
    * @return
