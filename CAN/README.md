@@ -51,3 +51,114 @@ Pre-defined peers can be started on a single machine using the following command
 ```bash
 make run-local-peer[1-6]
 ```
+
+### Example
+Terminal 1
+```bash
+make run-local-peer1
+java -Djava.security.policy=java.policy -Djava.rmi.server.codebase=file:./src -classpath ./src org.xiaohuahua.can.NodeServer peer1
+[INFO] hostname = zhonghuas-mbp.byod.gmu.edu
+[INFO] ip = 10.159.213.86
+[INFO] peerId = peer1
+[NodeServer] Registering Node Service XIAOHUAHUA_NodeService_peer1 @ 10.159.213.86
+[NodeServer] Registering Bootstrap Service XIAOHUAHUA_BootstrapService_peer1 @ 10.159.213.86
+[NodeServer] Ready...
+>>>
+```
+
+Terminal 2
+```bash
+make run-local-peer2
+java -Djava.security.policy=java.policy -Djava.rmi.server.codebase=file:./src -classpath ./src org.xiaohuahua.can.NodeServer peer2 localhost peer1
+[INFO] hostname = zhonghuas-mbp.byod.gmu.edu
+[INFO] ip = 10.159.213.86
+[INFO] peerId = peer2
+[NodeServer] Registering Node Service XIAOHUAHUA_NodeService_peer2 @ 10.159.213.86
+[NodeServer] Registering Bootstrap Service XIAOHUAHUA_BootstrapService_peer2 @ 10.159.213.86
+[NodeServer] Ready...
+>>>
+```
+
+Terminal 1
+```bash
+>>> join
+[Node] 1st node in CAN!
+[Node] CAN joined!
+--------------------------------
+| View
+| peerId    = peer1
+| host      = zhonghuas-mbp.byod.gmu.edu
+| ip        = 10.159.213.86
+| Zone      = { (0,0), (10,10) }
+| Neighbors =
+| Files     =
+--------------------------------
+```
+
+Terminal 2
+```bash
+>>> join
+[Node] Peer = peer1@10.159.213.86
+[Node] Route = [peer1@10.159.213.86]
+[Node] CAN joined!
+--------------------------------
+| View
+| peerId    = peer2
+| host      = zhonghuas-mbp.byod.gmu.edu
+| ip        = 10.159.213.86
+| Zone      = { (5,0), (5,10) }
+| Neighbors =
+|  { peer1@10.159.213.86, { (0,0), (5,10) } }
+| Files     =
+--------------------------------
+```
+
+Terminal 1
+```
+[Bootstrap]peer2@10.159.213.86 requested node list!
+[Node] New neighbor added!
+[Node] New neighbor = { peer2@10.159.213.86, { (5,0), (5,10) } }
+[Node] Neighborpeer2@10.159.213.86's zone updated from { (5,0), (5,10) } to { (5,0), (5,10) }
+[Node] peer1@10.159.213.86 notifyed!
+--------------------------------
+| View
+| peerId    = peer1
+| host      = zhonghuas-mbp.byod.gmu.edu
+| ip        = 10.159.213.86
+| Zone      = { (0,0), (5,10) }
+| Neighbors =
+|  { peer2@10.159.213.86, { (5,0), (5,10) } }
+| Files     =
+--------------------------------
+>>> leave
+[Node] Leaving CAN...
+[Node] Left CAN!
+```
+
+Terminal 2
+```
+[Node] Zone merged!
+--------------------------------
+| View
+| peerId    = peer2
+| host      = zhonghuas-mbp.byod.gmu.edu
+| ip        = 10.159.213.86
+| Zone      = { (0,0), (10,10) }
+| Neighbors =
+|  { peer1@10.159.213.86, { (0,0), (5,10) } }
+| Files     =
+--------------------------------
+[Node] Neighbor removed
+[Node] Removed neighbor = { peer1@10.159.213.86, { (0,0), (5,10) } }
+
+>>> view
+--------------------------------
+| View
+| peerId    = peer2
+| host      = zhonghuas-mbp.byod.gmu.edu
+| ip        = 10.159.213.86
+| Zone      = { (0,0), (10,10) }
+| Neighbors =
+| Files     =
+--------------------------------
+```
