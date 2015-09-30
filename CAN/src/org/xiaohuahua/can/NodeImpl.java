@@ -25,6 +25,16 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
   public static final String NAME_NODE = "[Node] ";
   public static final String NAME_BOOTSTRAP = "[Bootstrap]";
 
+  public static final String ANSI_RESET = "\u001B[0m";
+  public static final String ANSI_BLACK = "\u001B[30m";
+  public static final String ANSI_RED = "\u001B[31m";
+  public static final String ANSI_GREEN = "\u001B[32m";
+  public static final String ANSI_YELLOW = "\u001B[33m";
+  public static final String ANSI_BLUE = "\u001B[34m";
+  public static final String ANSI_PURPLE = "\u001B[35m";
+  public static final String ANSI_CYAN = "\u001B[36m";
+  public static final String ANSI_WHITE = "\u001B[37m";
+
   /**
    * 
    */
@@ -237,11 +247,14 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
     try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
       String line;
+      System.out.println(ANSI_CYAN + "[Scripting] Started!" + ANSI_RESET);
       while ((line = br.readLine()) != null) {
         Thread.sleep(2000);
-        System.out.println("[Scripting] " + line);
-        this.handleCommand(line);        
+        System.out.println(ANSI_CYAN + "[Scripting] >>> " + line + ANSI_RESET);
+        this.handleCommand(line);
       }
+      System.out.println(ANSI_CYAN + "[Scripting] Done!" + ANSI_RESET);
+
     } catch (FileNotFoundException e) {
       System.out.println("Fil not found for: " + filename + ". Error: " + e);
       e.printStackTrace();
@@ -578,6 +591,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
 
   // view self
   private void view(boolean fromShell) {
+    System.out.print(ANSI_GREEN);
     System.out.println("--------------------------------");
     System.out.println("| View");
     System.out.println("| peerId    = " + this.peerId);
@@ -596,6 +610,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
       }
     }
     System.out.println("--------------------------------");
+    System.out.print(ANSI_RESET);
 
     if (!fromShell)
       System.out.print(">>> ");
