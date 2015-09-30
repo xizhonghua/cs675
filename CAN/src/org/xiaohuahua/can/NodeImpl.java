@@ -416,16 +416,16 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
   @Override
   public SearchResult searchCAN(String key) throws RemoteException {
     Point point = HashUtil.getCoordinate(key);
+    SearchResult result = null;
     if (this.containsPoint(point)) {
       List<String> files = this.getFiles(key);
-      SearchResult reslt = new SearchResult(this.peerId, this.ip, key, files);
-      return reslt;
+      result = new SearchResult(this.peerId, this.ip, key, files);
     } else {
       Node n = this.getNearestNeighbor(point);
-      SearchResult result = n.searchCAN(key);
+      result = n.searchCAN(key);
       result.prependRoute(this.peerId, this.ip);
-      return result;
     }
+    return result;
   }
 
   @Override

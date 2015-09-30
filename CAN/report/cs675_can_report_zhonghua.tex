@@ -5,8 +5,11 @@
 %\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
 \usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
 								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{listings}
 \usepackage{amssymb}
 \usepackage{amsmath}
+
+\lstset{language=Java, basicstyle=\scriptsize}
 
 
 \title{CS675 Project 1: P2P Architecture}
@@ -18,7 +21,7 @@
 
 \section{Design}
 \subsection{Peer}
-A peer node is both a client and server which provides both CAN node service and bootstrap service.
+A peer node is both a client and server which provides both CAN service and bootstrap service.
 
 \subsection{Routing}
 When the coordinate of a target point $p$ is given, the CAN system routes the message in the following manner.
@@ -46,12 +49,37 @@ Compare to a socket based implementation, in which request and response are not 
 
 \subsection{Peer}
 When a peer is about to start, a bootstrap server (ip/hostname and name) must be provided. Otherwise, that peer will think it is the only node in CAN and will occupy the entire zone.
-The peer will provide both Node service (join, insert, search) and Bootstrap (get active node list). These two services are bind to different names.
+The peer will provide both CAN service (join, insert, search) and Bootstrap (get active node list). These two services are bind to different names.
 
 \subsubsection{Bootstrap Service}
-For a bootstrap server, it has only one remote method:
+For a peer as a bootstrap server, it has only one remote method as follow. This method will return randomly picked neighbors' peer\_ids/ips and itself's up to MAX\_NODES nodes (3 in current code).
 
-\subsubsection{Node Service}
+\begin{lstlisting}
+Map<String, String> getNodeList(String peerId, String ip)
+      throws RemoteException;
+\end{lstlisting}
+
+\subsubsection{CAN Service}
+For a peer as a CAN node, it is also a CAN server which provides CAN service (insert, search, join).
+As mentioned in previous section, all request that can not be handled by current peer will be forwarded to a closer peer recursively until reached a peer who can handle the request.
+Let us take a look at the implementation search, other methods will be very similar in structure.
+
+\begin{lstlisting}
+public SearchResult searchCAN(String key) throws RemoteException {
+    Point point = HashUtil.getCoordinate(key);
+    SearchResult result = null;
+    if (this.containsPoint(point)) {
+      // if the target point in current zone, handle request
+      List<String> files = this.getFiles(key);
+      result = new SearchResult(this.peerId, this.ip, key, files);
+    } else {      
+      Node n = this.getNearestNeighbor(point);    // find the closest neighbor
+      result = n.searchCAN(key);                  // forward the request
+      result.prependRoute(this.peerId, this.ip);  // update the routing table    
+    }
+    return result;
+  }
+\end{lstlisting}
 
 
 

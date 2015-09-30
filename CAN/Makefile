@@ -2,11 +2,16 @@ SRC = ./src
 SRCS = $(shell find $(SRC) -name *.java)
 CLASSES = $(SRCS:.java=.class)
 NODE_CLASS = org.xiaohuahua.can.NodeServer
-BOOTSTRAP_SERVER = localhost
-NODE1_NAME = node1
-NODE2_NAME = node2
-NODE3_NAME = node3
-NODE4_NAME = node4
+PEER1_NAME = peer1
+PEER2_NAME = peer2
+PEER3_NAME = peer3
+PEER4_NAME = peer4
+PEER5_NAME = peer5
+PEER6_NAME = peer6
+LOCAL_BOOTSTRAP_SERVER = localhost
+LOCAL_BOOTSTRAP_SERVER_NAME = ${LOCAL_BOOTSTRAP_SERVER} ${PEER1_NAME}
+BOOTSTRAP_SERVER = medusa-node1.vsnet.gmu.edu
+BOOTSTRAP_SERVER_NAME = ${BOOTSTRAP_SERVER} ${PEER1_NAME}
 
 JC = javac
 JFLAGS = -g -classpath $(SRC)
@@ -33,14 +38,40 @@ clean:
 backup:
 	tar -c -f src.tar src/*
 
-run-node1: classes
-	$(RUN_NODE) ${NODE1_NAME}
 
-run-node2: classes
-	$(RUN_NODE) ${NODE2_NAME} ${BOOTSTRAP_SERVER} ${NODE1_NAME}
+################################
+# medusa cluster mode
+################################
+run-peer1: classes
+	${RUN_NODE} ${PEER1_NAME}
 
-run-node3: classes
-	$(RUN_NODE) ${NODE3_NAME} ${BOOTSTRAP_SERVER} ${NODE1_NAME}
+run-peer2: classes
+	${RUN_NODE} ${PEER2_NAME}	${BOOTSTRAP_SERVER_NAME}
 
-run-node4: classes
-	$(RUN_NODE) ${NODE4_NAME} ${BOOTSTRAP_SERVER} ${NODE1_NAME}
+run-peer3: classes
+	${RUN_NODE} ${PEER3_NAME}	${BOOTSTRAP_SERVER_NAME}
+
+run-peer4: classes
+	${RUN_NODE} ${PEER4_NAME}	${BOOTSTRAP_SERVER_NAME}
+
+run-peer5: classes
+	${RUN_NODE} ${PEER5_NAME}	${BOOTSTRAP_SERVER_NAME}
+
+run-peer6: classes
+	${RUN_NODE} ${PEER6_NAME}	${BOOTSTRAP_SERVER_NAME}
+
+################################
+# local mode
+################################
+
+run-local-peer1: classes
+	$(RUN_NODE) ${PEER1_NAME}
+
+run-local-peer2: classes
+	$(RUN_NODE) ${PEER2_NAME} ${LOCAL_BOOTSTRAP_SERVER_NAME}
+
+run-local-peer3: classes
+	$(RUN_NODE) ${PEER3_NAME} ${LOCAL_BOOTSTRAP_SERVER_NAME}
+
+run-local-peer4: classes
+	$(RUN_NODE) ${PEER4_NAME} ${LOCAL_BOOTSTRAP_SERVER_NAME}
