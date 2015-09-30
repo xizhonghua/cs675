@@ -51,6 +51,7 @@ Scripting is implementated for dome purpose. Once a node is started, you can use
 ```bash
 >>> script filename
 ```
+Some pre-defined scripts can be found under ./scripts/
 
 
 #### Start Peers on Single Machine
