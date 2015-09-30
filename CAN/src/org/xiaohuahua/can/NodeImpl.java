@@ -1,6 +1,11 @@
 package org.xiaohuahua.can;
 
 import java.awt.Point;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -181,56 +186,93 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
     System.out.print(">>> ");
     try (Scanner s = new Scanner(System.in)) {
       while (s.hasNextLine()) {
-        String[] parameters = s.nextLine().split(" ");
-        switch (parameters[0]) {
-        case "insert":
-          this.hanldeInsert(parameters);
-          break;
-        case "search":
-          this.handleSearch(parameters);
-          break;
-        case "view":
-          this.view(true);
-          break;
-        case "join":
-          this.join();
-          break;
-        case "leave":
-          this.leave();
-          break;
-        case "exit":
-          if (this.joined)
-            this.leave();
-          System.exit(0);
-          break;
-        case "help":
-          printHelp();
-          break;
-        }
-
+        this.handleCommand(s.nextLine());
         System.out.print(">>> ");
       }
     }
   }
 
+  private void handleCommand(String line) {
+    String[] parameters = line.split(" ");
+    switch (parameters[0]) {
+    case "insert":
+      this.hanldeInsert(parameters);
+      break;
+    case "search":
+      this.handleSearch(parameters);
+      break;
+    case "view":
+      this.view(true);
+      break;
+    case "join":
+      this.join();
+      break;
+    case "leave":
+      this.leave();
+      break;
+    case "script":
+      this.handleScript(parameters);
+      break;
+    case "exit":
+      if (this.joined)
+        this.leave();
+      System.exit(0);
+      break;
+    case "help":
+      printHelp();
+      break;
+    default:
+      System.out.println(">>> Unknown command:" + parameters[0]);
+      break;
+    }
+  }
+
+  private void handleScript(String[] parameters) {
+    if (parameters.length != 2) {
+      System.out.println(">>> Usage: script filename");
+      return;
+    }
+
+    String filename = parameters[1];
+
+    try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+      String line;
+      while ((line = br.readLine()) != null) {
+        Thread.sleep(2000);
+        System.out.println("[Scripting] " + line);
+        this.handleCommand(line);        
+      }
+    } catch (FileNotFoundException e) {
+      System.out.println("Fil not found for: " + filename + ". Error: " + e);
+      e.printStackTrace();
+    } catch (IOException e) {
+      System.out.println("Unknown IO error. Error: " + e);
+      e.printStackTrace();
+    } catch (InterruptedException e) {
+    }
+
+  }
+
   private void hanldeInsert(String[] parameters) {
     if (parameters.length != 3) {
       System.out.println(">>> Usage: insert key content");
-    } else {
-      String key = parameters[1];
-      String content = parameters[2];
-      String kv = "{\"" + key + "\":\"" + content + "\"}";
-
-      try {
-        InsertResult result = this.insertCAN(key, content);
-        System.out.println(NAME_NODE + kv + " inserted!");
-        this.printPeerAndRoute(result);
-      } catch (Exception e) {
-        System.out
-            .println(NAME_NODE + "Failed to insert " + kv + ". Error: " + e);
-        e.printStackTrace();
-      }
+      return;
     }
+
+    String key = parameters[1];
+    String content = parameters[2];
+    String kv = "{\"" + key + "\":\"" + content + "\"}";
+
+    try {
+      InsertResult result = this.insertCAN(key, content);
+      System.out.println(NAME_NODE + kv + " inserted!");
+      this.printPeerAndRoute(result);
+    } catch (Exception e) {
+      System.out
+          .println(NAME_NODE + "Failed to insert " + kv + ". Error: " + e);
+      e.printStackTrace();
+    }
+
   }
 
   private void handleSearch(String[] parameters) {
@@ -568,6 +610,7 @@ public class NodeImpl extends UnicastRemoteObject implements Node, Bootstrap {
         .println("insert keyword content | insert keyword/content into CAN");
     System.err.println("search keyword         | search by keyword");
     System.err.println("leave                  | leave CAN");
+    System.err.println("script filename        | run a script");
     System.err.println("help                   | print this message");
   }
 
