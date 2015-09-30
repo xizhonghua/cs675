@@ -34,7 +34,7 @@ $ java -Djava.security.policy=java.policy \
 ```
 
 #### CLI
-Once a node is started, the following commands can be used to interactive with the node.
+Once a node is started, the following commands can be used to interactive with the node when you see '>>> '.
 
 | Command | Arguments    | Comment                     |
 |:-------:|:------------:|:---------------------------:|
