@@ -82,31 +82,41 @@ public SearchResult searchCAN(String key) throws RemoteException {
   }
 \end{lstlisting}
 
-\section{Leaving Protocol}
+\subsection{Leaving Protocol}
 When a node leaves CAN, it must migrate its zone to one of its neighbor. One way to migrate a zone is merging. The zone from the leaving node is merged into its neighbor's zone when they are mergeable, he merged zone should still be rectangle or square. However, in some cases, the leaving zone can not be merged to any neighbors. In this case, a node must be volunteered to store the zone temporarily and wait a new node to occupy the entire temp zone. However, if that nodes also leaves CAN, both its main zone and temp zones must be migrated to it neighbor and so on. This leaving protocol could lead to fragmentation. In this implementation, temp zones merging and self-merging are introduced to minimize fragmentation which will be detailed in the following section.
 
-\subsection{Recursive Self-Merging}
+\subsubsection{Self-Merging}
 When a node receives a temp zone, it will try to merge the temp zone with its main zone first, followed by temp zone / temp zone merging. If any of two zones were merged, this process is repeated, until none of two zones (either main zone or temp zones) owned by current node can not be merged anymore. An end to end scenario is shown in Fig.~\ref{fig:merging} and the screenshots of peer2's info before and after peer3 left is shown in Fig.~\ref{fig:screenshot}.
 
 \begin{figure}[htbp] %  figure placement: here, top, bottom, or page
    \centering
-   \subfigure[peer1 joined]{\includegraphics[width=1.8in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide1.png}}
-   \subfigure[peer2 joined]{\includegraphics[width=1.8in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide2.png}}
-   \subfigure[peer3 joined]{\includegraphics[width=1.8in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide3.png}}
-   \subfigure[peer1 left]{\includegraphics[width=1.8in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide4.png}}
-   \subfigure[peer3 left, before self merging]{\includegraphics[width=1.8in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide5.png}}
-   \subfigure[after self merging]{\includegraphics[width=1.8in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide6.png}}
+   \subfigure[peer1 joined]{\includegraphics[width=1.5in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide1.png}}
+   \subfigure[peer2 joined]{\includegraphics[width=1.5in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide2.png}}
+   \subfigure[peer3 joined]{\includegraphics[width=1.5in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide3.png}}
+   \subfigure[peer1 left]{\includegraphics[width=1.5in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide4.png}}
+   \subfigure[peer3 left, before self merging]{\includegraphics[width=1.5in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide5.png}}
+   \subfigure[after self merging]{\includegraphics[width=1.5in, clip=true, trim=80mm 0mm 80mm 0mm]{figures/zone/Slide6.png}}
    \caption{Peers join and left CAN with self-merging enabled.}
    \label{fig:merging}
 \end{figure} 
 
 \begin{figure}[htbp] %  figure placement: here, top, bottom, or page
    \centering
-   \subfigure[before peer3 left]{\includegraphics[width=5in, clip=true, trim=20mm 30mm 20mm 25mm]{figures/before.png}}
-   \subfigure[after peer3 left]{\includegraphics[width=5in, clip=true, trim=20mm 30mm 20mm 25mm]{figures/after.png}}
+   \subfigure[before peer3 left]{\includegraphics[width=5in, clip=true, trim=22mm 30mm 30mm 28mm]{figures/before.png}}
+   \subfigure[after peer3 left]{\includegraphics[width=5in, clip=true, trim=22mm 30mm 30mm 28mm]{figures/after.png}}
    \caption{Screenshots of self-merging process.}
    \label{fig:screenshot}
 \end{figure} 
 
+\subsection{File Insertion/Retrieval}
+A file is inserted into CAN as a key value pair. Key is the keyword of the file, while the value is the content of the file. The following screen shows the process of file insertion and retrieval on two nodes.
+
+\begin{figure}[htbp] %  figure placement: here, top, bottom, or page
+   \centering
+      \subfigure[peer1]{\includegraphics[width=2.9in, clip=true, trim=22mm 29mm 100mm 28mm]{figures/insertion2.png}}
+   \subfigure[peer2]{\includegraphics[width=2.9in, clip=true, trim=22mm 29mm 100mm 28mm]{figures/insertion1.png}}
+   \caption{Screenshots of file insertion and retrivel.}
+   \label{fig:screenshot}
+\end{figure} 
 
 \end{document}  
