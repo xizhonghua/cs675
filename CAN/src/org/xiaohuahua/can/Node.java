@@ -28,9 +28,10 @@ public interface Node extends Remote {
    * 
    * @param zone
    *          zone to merge
+   * @return returned the updated neighbor info
    * @throws RemoteException
    */
-  public void mergeZone(Zone zone) throws RemoteException;
+  public Neighbor mergeZone(Zone zone) throws RemoteException;
 
   /**
    * Add a temp zone

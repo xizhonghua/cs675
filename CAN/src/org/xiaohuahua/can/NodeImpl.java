@@ -36,6 +36,24 @@ public class NodeImpl extends UnicastRemoteObject
   public static final String ANSI_CYAN = "\u001B[36m";
   public static final String ANSI_WHITE = "\u001B[37m";
 
+  public void printlnColor(String msg, String color) {
+    System.out.print(color);
+    System.out.print("[" + this.peerId + "@" + this.ip + "] " + msg);
+    System.out.println(ANSI_RESET);
+  }
+
+  public void printlnRed(String msg) {
+    printlnColor(msg, ANSI_RED);
+  }
+
+  public void printlnYellow(String msg) {
+    printlnColor(msg, ANSI_YELLOW);
+  }
+
+  public void printlnGreen(String msg) {
+    printlnColor(msg, ANSI_GREEN);
+  }
+
   /**
    * 
    */
@@ -161,10 +179,13 @@ public class NodeImpl extends UnicastRemoteObject
    * 
    * @param zone
    *          zone to migrate
+   * @param isTempZone
+   *          whether the zone is a temp zone or not
    * @return true, if migrated, false otherwise
    * @throws RemoteException
    */
-  private boolean migrateZone(Zone zone) throws RemoteException {
+  private boolean migrateZone(Zone zone, boolean isTempZone)
+      throws RemoteException {
 
     for (Neighbor nb : this.neighbors) {
       boolean canMerge = false;
@@ -174,26 +195,22 @@ public class NodeImpl extends UnicastRemoteObject
         canMerge = true;
       }
 
-      // can be merged to a temp zone
-      // could this happen?
-
-      // TODO(zxi) check temp zones...
-
       if (canMerge) {
         // Step 2.1 Merge current zone to a new node
         Node node = this.getNode(nb);
-        node.mergeZone(zone);
+        Neighbor updatedNB = node.mergeZone(zone);
 
-        // Step 2.2 Notify current neighbors
+        // Notify current neighbors
         for (Neighbor enb : this.neighbors) {
 
           Node enode = this.getNode(enb);
 
-          // Step 2.2.1 Notify existing neighbors to remove myself
-          enode.removeNeighbor(this.asNeighbor());
+          // Notify existing neighbors to remove myself
+          if (!isTempZone)
+            enode.removeNeighbor(this.asNeighbor());
           // Step 2.2.2 Notify existing neighbors to add new neighbor
           if (!enb.equals(nb))
-            enode.addOrUpdateNeighbor(nb);
+            enode.addOrUpdateNeighbor(updatedNB);
 
         }
 
@@ -213,7 +230,8 @@ public class NodeImpl extends UnicastRemoteObject
     for (Neighbor nb : this.neighbors) {
       if (nb.getZone().isNeighbor(zone)) {
         Node node = this.getNode(nb);
-        node.removeNeighbor(this.asNeighbor());
+        if (!isTempZone)
+          node.removeNeighbor(this.asNeighbor());
 
         if (smNeighbor.equals(nb))
           continue;
@@ -238,16 +256,16 @@ public class NodeImpl extends UnicastRemoteObject
 
       System.out.println(NAME_NODE + "Leaving CAN...");
 
-      System.out.println(NAME_NODE + "Migrating main zone...");
-
       if (this.tempZones.size() > 0) {
-        System.out.print(NAME_NODE + "Migrating temp zones...");
+        System.out.println(NAME_NODE + "Migrating temp zones...");
 
         for (Zone tmpZone : this.tempZones)
-          this.migrateZone(tmpZone);
+          this.migrateZone(tmpZone, true);
       }
 
-      this.migrateZone(this.zone);
+      System.out.println(NAME_NODE + "Migrating main zone...");
+
+      this.migrateZone(this.zone, false);
 
     } catch (Exception e) {
       System.out.println(NAME_NODE + "Failed to leave CAN. Error: " + e);
@@ -394,7 +412,11 @@ public class NodeImpl extends UnicastRemoteObject
   public Boolean containsPoint(Point point) {
     if (this.zone.contains(point))
       return true;
-    // TODO(zxi) check temp zone;
+
+    for (Zone tmpZone : this.tempZones) {
+      if (tmpZone.contains(point))
+        return true;
+    }
 
     return false;
   }
@@ -405,8 +427,12 @@ public class NodeImpl extends UnicastRemoteObject
    * @return the split zone
    */
   public Zone splitZone() {
-    Zone newZone = this.zone.split();
-    return newZone;
+    printlnYellow("Spliting zone...");
+    printlnYellow("Current zone = " + this.zone);
+    Zone splitZone = this.zone.split();
+    printlnYellow("Split zone = " + splitZone);
+    printlnYellow("New zone = " + this.zone);
+    return splitZone;
   }
 
   /////////////////////////////////////
@@ -416,31 +442,35 @@ public class NodeImpl extends UnicastRemoteObject
   public double distanceTo(Point point) throws RemoteException {
     double minDist = this.zone.distanceTo(point);
 
-    // TODO (check temp zone)
+    for (Zone tmpZone : this.tempZones) {
+      double dist = tmpZone.distanceTo(point);
+      if (dist < minDist) {
+        minDist = dist;
+      }
+    }
 
     return minDist;
 
   }
 
   @Override
-  public void mergeZone(Zone zone) throws RemoteException {
+  public Neighbor mergeZone(Zone zone) throws RemoteException {
 
     System.out.println();
 
-    System.out.print(ANSI_YELLOW);
-    System.out.println(NAME_NODE + "Merging zone...");
-    System.out.println(NAME_NODE + "Zone to merge = " + zone);
+    this.printlnYellow("Merging zone...");
+    this.printlnYellow("Zone to merge = " + zone);
 
     if (this.zone.canMerge(zone)) {
-      System.out.println(NAME_NODE + "Old Zone = " + this.zone);
+      this.printlnYellow("Old Zone = " + this.zone);
       this.zone.merge(zone);
-      System.out.println(NAME_NODE + "New Zone = " + this.zone);
+      this.printlnYellow("New Zone = " + this.zone);
     } else {
       for (Zone tmpZone : this.tempZones) {
         if (tmpZone.canMerge(zone)) {
-          System.out.println(NAME_NODE + "Old Temp Zone = " + tmpZone);
+          this.printlnYellow("Old Temp Zone = " + tmpZone);
           tmpZone.merge(zone);
-          System.out.println(NAME_NODE + "New Temp Zone = " + tmpZone);
+          this.printlnYellow("New Temp Zone = " + tmpZone);
         }
       }
     }
@@ -453,11 +483,11 @@ public class NodeImpl extends UnicastRemoteObject
       for (Zone tmpZone : this.tempZones) {
         if (tmpZone.canMerge(this.zone)) {
           selfMergeable = true;
-          System.out.println(NAME_NODE + "Self merging...");
-          System.out.println(NAME_NODE + "Zone to merge = " + tmpZone);
-          System.out.println(NAME_NODE + "Old Zone = " + this.zone);
+          this.printlnYellow("Self merging...");
+          this.printlnYellow("Zone to merge = " + tmpZone);
+          this.printlnYellow("Old Zone = " + this.zone);
           this.zone.merge(tmpZone);
-          System.out.println(NAME_NODE + "New Zone = " + this.zone);
+          this.printlnYellow("New Zone = " + this.zone);
           this.tempZones.remove(tmpZone);
           break;
         }
@@ -470,12 +500,13 @@ public class NodeImpl extends UnicastRemoteObject
             continue;
           if (tmpZone1.canMerge(tmpZone2)) {
             selfMergeable = true;
-            System.out.println(NAME_NODE + "Self merging...");
-            System.out.println(NAME_NODE + "Zone to merge = " + tmpZone2);
-            System.out.println(NAME_NODE + "Old Tmp Zone = " + this.zone);
+            this.printlnYellow("Self merging...");
+            this.printlnYellow("Zone to merge = " + tmpZone2);
+            this.printlnYellow("Old Tmp Zone = " + this.zone);
             tmpZone1.merge(tmpZone2);
-            System.out.println(NAME_NODE + "New Tmp Zone = " + this.zone);
+            this.printlnYellow("New Tmp Zone = " + this.zone);
             this.tempZones.remove(tmpZone2);
+            break;
           }
         }
       }
@@ -484,9 +515,11 @@ public class NodeImpl extends UnicastRemoteObject
         break;
     }
 
-    System.out.println(NAME_NODE + "Zone merged!");
-    System.out.print(ANSI_RESET);
+    this.printlnYellow("Zone merged!");
+
     this.view(false);
+
+    return this.asNeighbor();
   }
 
   @Override
@@ -568,7 +601,7 @@ public class NodeImpl extends UnicastRemoteObject
       if (this.zone.contains(point)) {
 
         // slip the main zone
-        newZone = this.zone.split();
+        newZone = this.splitZone();
 
       } else {
 
@@ -806,7 +839,7 @@ public class NodeImpl extends UnicastRemoteObject
     if (this.joined) {
       // only valid when joined
       System.out.println("| Zone      = " + this.zone.toString());
-      System.out.println("| Temp zons = " + this.tempZones);
+      System.out.println("| Tmp zones = " + this.tempZones);
       System.out.println("| Neighbors = ");
       for (Neighbor neighbor : this.neighbors)
         System.out.println("|  " + neighbor);
