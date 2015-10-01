@@ -307,8 +307,9 @@ public class NodeImpl extends UnicastRemoteObject
     }
 
     this.joined = false;
-    this.zone = null;
+    this.zone.clear();
     this.neighbors.clear();
+    this.tempZones.clear();
 
     System.out.println(NAME_NODE + "Left CAN!");
 

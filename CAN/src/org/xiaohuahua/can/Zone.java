@@ -27,6 +27,13 @@ public class Zone extends Rectangle implements Serializable {
     this.files = new HashMap<>();
   }
 
+  /**
+   * clear the (files in the) zone
+   */
+  public void clear() {
+    this.files.clear();
+  }
+
   public boolean insertFile(String key, String content) {
     if (!files.containsKey(key)) {
       files.put(key, new ArrayList<String>());
@@ -125,14 +132,18 @@ public class Zone extends Rectangle implements Serializable {
    */
   public boolean canMerge(Zone zone) {
 
-    if (!this.getSize().equals(zone.getSize()))
-      return false;
-
     if ((this.x != zone.x && this.y != zone.y)
         || (this.x == zone.x && this.y + this.height != zone.y
             && zone.y + zone.height != this.y)
         || (this.y == zone.y && this.x + this.width != zone.x
             && zone.x + zone.width != this.x))
+      return false;
+
+    Rectangle newRect = this.union(zone);
+    
+    if (newRect.getWidth()
+        * newRect.getHeight() != this.getWidth() * this.getHeight()
+            + zone.getWidth() * zone.getHeight())
       return false;
 
     return true;
