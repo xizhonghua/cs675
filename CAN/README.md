@@ -54,6 +54,18 @@ Scripting is implementated for dome purpose. Once a node is started, you can use
 Some pre-defined scripts can be found under ./scripts/
 
 
+#### Test
+suggested test:
+* ```$ make run-peer1``` on medusa-node1
+* ```$ make run-peer2``` on medusa-node2
+* ```$ make run-peer4``` on medusa-node4
+* ```>>> script scripts/peer1.can``` on medusa-node1
+* ```>>> script scripts/peer2.can``` on medusa-node2
+* ```>>> leave``` on medusa-node1
+* ```>>> leave``` on medusa-node4
+* ```>>> view``` on medusa-node2
+
+
 #### Start Peers on Single Machine
 Pre-defined peers can be started on a single machine using the following command:
 ```bash
