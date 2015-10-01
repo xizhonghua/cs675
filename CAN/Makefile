@@ -40,7 +40,7 @@ backup:
             Makefile \
             java.policy \
             src/* \
-            README.md \
+            README.* \
             report/*.pdf
 
 

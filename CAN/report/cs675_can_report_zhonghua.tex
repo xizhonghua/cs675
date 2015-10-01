@@ -62,7 +62,7 @@ Map<String, String> getNodeList(String peerId, String ip)
 
 \subsubsection{CAN Service}
 For a peer as a CAN node, it is also a CAN server which provides CAN service (insert, search, join).
-As mentioned in previous section, all request that can not be handled by current peer will be forwarded to a closer peer recursively until reached a peer who can handle the request.
+As mentioned in previous section, all requests that can not be handled by current peer will be forwarded to a closer peer recursively until reached a peer who can handle the request.
 Let us take a look at the implementation search, other methods will be very similar in structure.
 
 \begin{lstlisting}
