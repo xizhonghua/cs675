@@ -67,13 +67,9 @@ public class NodeServer {
 
       node.join();
       node.run();
-    } catch (
-
-    Exception e)
-
-    {
-      System.out
-          .println("[NodeServer] Failed to register Bootstrap Service: " + e);
+    } catch (Exception e) {
+      System.out.println("[NodeServer] Error: " + e);
+      e.printStackTrace();
     }
   }
 

@@ -160,6 +160,7 @@ public class NodeImpl extends UnicastRemoteObject
       if (this.bootstrap == this) {
         System.out.println(NAME_NODE + "1st node in CAN!");
         this.joined = true;
+        this.zone = new Zone(0, 0, Config.ZONE_SIZE, Config.ZONE_SIZE);
       } else {
 
         Map<String, String> nodes = this.bootstrap.getNodeList(this.peerId,
@@ -286,16 +287,19 @@ public class NodeImpl extends UnicastRemoteObject
 
       System.out.println(NAME_NODE + "Leaving CAN...");
 
-      if (this.tempZones.size() > 0) {
-        System.out.println(NAME_NODE + "Migrating temp zones...");
+      if (this.neighbors.size() > 0) {
 
-        for (Zone tmpZone : this.tempZones)
-          this.migrateZone(tmpZone, true);
+        if (this.tempZones.size() > 0) {
+          System.out.println(NAME_NODE + "Migrating temp zones...");
+
+          for (Zone tmpZone : this.tempZones)
+            this.migrateZone(tmpZone, true);
+        }
+
+        System.out.println(NAME_NODE + "Migrating main zone...");
+
+        this.migrateZone(this.zone, false);
       }
-
-      System.out.println(NAME_NODE + "Migrating main zone...");
-
-      this.migrateZone(this.zone, false);
 
     } catch (Exception e) {
       System.out.println(NAME_NODE + "Failed to leave CAN. Error: " + e);
@@ -304,7 +308,7 @@ public class NodeImpl extends UnicastRemoteObject
 
     this.joined = false;
     this.zone = null;
-    this.neighbors = null;
+    this.neighbors.clear();
 
     System.out.println(NAME_NODE + "Left CAN!");
 
