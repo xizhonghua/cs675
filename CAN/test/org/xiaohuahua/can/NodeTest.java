@@ -1,11 +1,8 @@
 package org.xiaohuahua.can;
 
-import static org.junit.Assert.*;
-
 import java.rmi.RemoteException;
 
 import org.junit.Test;
-import org.xiaohuahua.can.NodeImpl;
 
 public class NodeTest {
 

@@ -36,14 +36,28 @@ public class NodeImpl extends UnicastRemoteObject
   public static final String ANSI_CYAN = "\u001B[36m";
   public static final String ANSI_WHITE = "\u001B[37m";
 
+  public String getName() {
+    return this.peerId + "@" + this.ip;
+  }
+
+  public void printColor(String msg, String color) {
+    System.out.print(color);
+    System.out.print(msg);
+    System.out.print(ANSI_RESET);
+  }
+
   public void printlnColor(String msg, String color) {
     System.out.print(color);
-    System.out.print("[" + this.peerId + "@" + this.ip + "] " + msg);
-    System.out.println(ANSI_RESET);
+    System.out.println("[" + this.getName() + "] " + msg);
+    System.out.print(ANSI_RESET);
   }
 
   public void printlnRed(String msg) {
     printlnColor(msg, ANSI_RED);
+  }
+
+  public void printRed(String msg) {
+    printColor(msg, ANSI_RED);
   }
 
   public void printlnYellow(String msg) {
@@ -52,6 +66,22 @@ public class NodeImpl extends UnicastRemoteObject
 
   public void printlnGreen(String msg) {
     printlnColor(msg, ANSI_GREEN);
+  }
+
+  public void printGreen(String msg) {
+    printColor(msg, ANSI_GREEN);
+  }
+
+  public void printlnPurple(String msg) {
+    printlnColor(msg, ANSI_PURPLE);
+  }
+
+  public void printlnCyan(String msg) {
+    printlnColor(msg, ANSI_CYAN);
+  }
+
+  public void printCyan(String msg) {
+    printColor(msg, ANSI_CYAN);
   }
 
   /**
@@ -332,7 +362,7 @@ public class NodeImpl extends UnicastRemoteObject
 
   private void handleScript(String[] parameters) {
     if (parameters.length != 2) {
-      System.out.println(">>> Usage: script filename");
+      this.printRed(">>> Usage: script filename\n");
       return;
     }
 
@@ -340,13 +370,13 @@ public class NodeImpl extends UnicastRemoteObject
 
     try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
       String line;
-      System.out.println(ANSI_CYAN + "[Scripting] Started!" + ANSI_RESET);
+      this.printGreen("[Scripting] Started!\n");
       while ((line = br.readLine()) != null) {
         Thread.sleep(2000);
-        System.out.println(ANSI_CYAN + "[Scripting] >>> " + line + ANSI_RESET);
+        this.printGreen("[Scripting] >>> " + line + "\n");
         this.handleCommand(line);
       }
-      System.out.println(ANSI_CYAN + "[Scripting] Done!" + ANSI_RESET);
+      this.printGreen("[Scripting] Done!\n");
 
     } catch (FileNotFoundException e) {
       System.out.println("Fil not found for: " + filename + ". Error: " + e);
@@ -371,11 +401,10 @@ public class NodeImpl extends UnicastRemoteObject
 
     try {
       InsertResult result = this.insertCAN(key, content);
-      System.out.println(NAME_NODE + kv + " inserted!");
+      this.printlnPurple(kv + " inserted!");
       this.printPeerAndRoute(result);
     } catch (Exception e) {
-      System.out
-          .println(NAME_NODE + "Failed to insert " + kv + ". Error: " + e);
+      this.printlnRed("Failed to insert " + kv + ". Error: " + e);
       e.printStackTrace();
     }
 
@@ -383,21 +412,21 @@ public class NodeImpl extends UnicastRemoteObject
 
   private void handleSearch(String[] parameters) {
     if (parameters.length != 2) {
-      System.out.println("Usage: search key");
+      this.printRed("Usage: search key\n");
     } else {
       String key = parameters[1];
 
       try {
         SearchResult result = this.searchCAN(key);
-        System.out.println(NAME_NODE + "Search results: matched files = "
-            + result.getFiles().size());
-        System.out.println("\tkey = \"" + result.getKey() + "\"");
+        this.printlnPurple(
+            "Search results: matched files = " + result.getFiles().size());
+        this.printlnPurple("  key = \"" + result.getKey() + "\"");
         for (String content : result.getFiles())
-          System.out.println("\t\tContent = \"" + content + "\"");
+          this.printlnPurple("    Content = \"" + content + "\"");
         this.printPeerAndRoute(result);
       } catch (Exception e) {
-        System.out
-            .println(NAME_NODE + "Failed to search" + key + ". Error: " + e);
+        this.printlnRed("Failed to search" + key + ". Error: " + e);
+        e.printStackTrace();
       }
     }
   }
@@ -528,12 +557,7 @@ public class NodeImpl extends UnicastRemoteObject
     this.tempZones.add(zone);
 
     System.out.println();
-    System.out.print(ANSI_RED);
-
-    System.out.println(NAME_NODE + "Temp zone added! temp zone = " + zone);
-
-    System.out.println(ANSI_RESET);
-    System.out.print(">>> ");
+    this.printlnYellow("Temp zone added! temp zone = " + zone);
   }
 
   /**
@@ -787,7 +811,12 @@ public class NodeImpl extends UnicastRemoteObject
     if (this.zone.contains(p)) {
       return this.zone.getFiles(key);
     }
-    // TODO(zxi) Check temp zones...
+
+    for (Zone tmpZone : this.tempZones) {
+      if (tmpZone.contains(p)) {
+        return tmpZone.getFiles(key);
+      }
+    }
 
     return new ArrayList<>();
   }
@@ -801,30 +830,39 @@ public class NodeImpl extends UnicastRemoteObject
   private void insertFile(String key, String content) {
     Point p = HashUtil.getCoordinate(key);
 
+    Zone insertedZone = null;
+
     if (this.zone.contains(p)) {
       this.zone.insertFile(key, content);
+      insertedZone = this.zone;
     }
 
-    // TODO(zxi) check temp zones...
+    for (Zone tmpZone : this.tempZones) {
+      if (tmpZone.contains(p)) {
+        tmpZone.insertFile(key, content);
+        insertedZone = tmpZone;
+        break;
+      }
+    }
 
-    System.out.println(
-        NAME_NODE + "new file {\"" + key + "\":\"" + content + "\"} inserted!");
+    this.printlnPurple("new file {\"" + key + "\":\"" + content
+        + "\"} inserted into zone " + insertedZone);
   }
 
   private void printPeerAndRoute(ResultBase result) {
 
-    System.out.println(NAME_NODE + "Peer = " + result.getPeerId() + "@"
+    this.printlnCyan("Peer = " + result.getPeerId() + "@"
         + result.getRoutes().get(0).getValue());
 
-    System.out.print(NAME_NODE + "Route = [");
+    this.printCyan("[" + this.getName() + "] Route = [");
     boolean first = true;
     for (SimpleEntry<String, String> kv : result.getRoutes()) {
       if (!first)
-        System.out.print(", ");
-      System.out.print(kv.getKey() + "@" + kv.getValue());
+        this.printCyan(", ");
+      this.printCyan(kv.getKey() + "@" + kv.getValue());
       first = false;
     }
-    System.out.println("]");
+    this.printCyan("]\n");
   }
 
   // view self
@@ -844,11 +882,22 @@ public class NodeImpl extends UnicastRemoteObject
       for (Neighbor neighbor : this.neighbors)
         System.out.println("|  " + neighbor);
       System.out.println("| Files     = ");
+      // main zone
       for (String key : this.zone.getKeySet()) {
         List<String> contents = this.zone.getFiles(key);
         System.out.println("|  Key = \"" + key + "\"");
         for (String content : contents) {
           System.out.println("|    Content = \"" + content + "\"");
+        }
+      }
+      // tmp zone
+      for (Zone tmpZone : this.tempZones) {
+        for (String key : tmpZone.getKeySet()) {
+          List<String> contents = tmpZone.getFiles(key);
+          System.out.println("|  Key = \"" + key + "\"");
+          for (String content : contents) {
+            System.out.println("|    Content = \"" + content + "\"");
+          }
         }
       }
     }
@@ -861,7 +910,6 @@ public class NodeImpl extends UnicastRemoteObject
   }
 
   private static void printHelp() {
-    // TODO(zxi) print help
     System.err.println("Commands:");
     System.err.println("join                   | join CAN");
     System.err.println("view                   | view node info");
