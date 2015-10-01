@@ -237,8 +237,10 @@ public class NodeImpl extends UnicastRemoteObject
           Node enode = this.getNode(enb);
 
           // Notify existing neighbors to remove myself
-          if (!isTempZone)
+          if (!isTempZone) {
+            this.printlnYellow("affted neighor = " + nb.getName());
             enode.removeNeighbor(this.asNeighbor());
+          }
           // Step 2.2.2 Notify existing neighbors to add new neighbor
           if (!enb.equals(nb))
             enode.addOrUpdateNeighbor(updatedNB);
@@ -249,9 +251,7 @@ public class NodeImpl extends UnicastRemoteObject
       } // end of if (canMerge)
     }
 
-    System.out.print(ANSI_RED);
-    System.out
-        .println(NAME_NODE + "Current zone can't be merged! Zone = " + zone);
+    this.printlnRed("Current zone can't be merged! Zone = " + zone);
 
     Node smNode = this.getSmallestNeightbor();
     smNode.addTempZone(zone);
@@ -261,8 +261,10 @@ public class NodeImpl extends UnicastRemoteObject
     for (Neighbor nb : this.neighbors) {
       if (nb.getZone().isNeighbor(zone)) {
         Node node = this.getNode(nb);
-        if (!isTempZone)
+        if (!isTempZone) {
+          this.printlnYellow("affted neighor = " + nb.getName());
           node.removeNeighbor(this.asNeighbor());
+        }
 
         if (smNeighbor.equals(nb))
           continue;
@@ -270,8 +272,6 @@ public class NodeImpl extends UnicastRemoteObject
         node.addOrUpdateNeighbor(smNeighbor);
       }
     }
-
-    System.out.print(ANSI_RESET);
 
     return false;
   }
@@ -285,24 +285,24 @@ public class NodeImpl extends UnicastRemoteObject
 
     try {
 
-      System.out.println(NAME_NODE + "Leaving CAN...");
+      this.printlnRed("Leaving CAN...");
 
       if (this.neighbors.size() > 0) {
 
         if (this.tempZones.size() > 0) {
-          System.out.println(NAME_NODE + "Migrating temp zones...");
+          this.printlnYellow("Migrating temp zones...");
 
           for (Zone tmpZone : this.tempZones)
             this.migrateZone(tmpZone, true);
         }
 
-        System.out.println(NAME_NODE + "Migrating main zone...");
+        this.printlnYellow("Migrating main zone...");
 
         this.migrateZone(this.zone, false);
       }
 
     } catch (Exception e) {
-      System.out.println(NAME_NODE + "Failed to leave CAN. Error: " + e);
+      this.printlnRed("Failed to leave CAN. Error: " + e);
       e.printStackTrace();
     }
 
@@ -311,7 +311,7 @@ public class NodeImpl extends UnicastRemoteObject
     this.neighbors.clear();
     this.tempZones.clear();
 
-    System.out.println(NAME_NODE + "Left CAN!");
+    this.printlnRed("Left CAN!");
 
     return true;
   }
@@ -466,6 +466,7 @@ public class NodeImpl extends UnicastRemoteObject
     Zone splitZone = this.zone.split();
     printlnYellow("Split zone = " + splitZone);
     printlnYellow("New zone = " + this.zone);
+    printlnYellow("Spliting done!");
     return splitZone;
   }
 
@@ -588,18 +589,18 @@ public class NodeImpl extends UnicastRemoteObject
         neighborsToRemove.add(nb);
     }
 
-    // Remove neighbor
+    // Remove from neighbor's list
     for (Neighbor nb : neighborsToRemove) {
       Node node = this.getNode(nb);
       node.removeNeighbor(this.asNeighbor());
-      System.out.println(NAME_NODE + nb.getName() + " notifyed!");
+      this.printlnYellow(nb.getName() + " is no longer a neighbor!");
     }
 
     // Update zone info for neighbors
     for (Neighbor nb : this.neighbors) {
       Node node = this.getNode(nb);
       node.addOrUpdateNeighbor(this.asNeighbor());
-      System.out.println(NAME_NODE + nb.getName() + " notifyed!");
+      this.printlnYellow("Notify " + nb.getName() + " my zone updated!");
     }
 
     Neighbor neighbor = new Neighbor(peerId, ip, newZone);
@@ -611,8 +612,11 @@ public class NodeImpl extends UnicastRemoteObject
     // Notify new node neighbor entered
     for (Neighbor nb : newNeighbors) {
       Node node = this.getNode(nb);
+      if (nb.equals(this.asNeighbor()))
+        continue;
+
       node.addOrUpdateNeighbor(neighbor);
-      System.out.println(NAME_NODE + nb.getName() + " notifyed!");
+      this.printlnYellow("Notify " + nb.getName() + " new node entered!");
     }
 
     return newNeighbors;
@@ -625,6 +629,9 @@ public class NodeImpl extends UnicastRemoteObject
     if (this.containsPoint(point)) {
 
       Zone newZone = null;
+
+      this.printlnYellow("Processing join request from " + peerId + "@" + ip
+          + " target point = " + point);
 
       // if the target point is in main zone
       if (this.zone.contains(point)) {
@@ -678,16 +685,15 @@ public class NodeImpl extends UnicastRemoteObject
         // Update
         Neighbor oldNeighbor = this.neighbors.get(i);
         this.neighbors.set(i, neighbor);
-        System.out.println(NAME_NODE + "Neighbor" + neighbor.getName()
-            + "'s zone updated from " + oldNeighbor.getZone() + " to "
-            + neighbor.getZone());
+        this.printlnYellow(neighbor.getName() + " 's zone updated from "
+            + oldNeighbor.getZone() + " to " + neighbor.getZone());
         return;
       }
     }
 
     this.neighbors.add(neighbor);
-    System.out.println(NAME_NODE + "New neighbor added!");
-    System.out.println(NAME_NODE + "New neighbor = " + neighbor);
+
+    this.printlnYellow("New neighbor added! " + neighbor);
   }
 
   @Override
@@ -697,8 +703,7 @@ public class NodeImpl extends UnicastRemoteObject
         // Update
         Neighbor oldNeighbor = this.neighbors.get(i);
         this.neighbors.remove(oldNeighbor);
-        System.out.println(NAME_NODE + "Neighbor removed");
-        System.out.println(NAME_NODE + "Removed neighbor = " + oldNeighbor);
+        this.printlnYellow("Neighbor " + oldNeighbor.getName() + " left CAN!");
         return;
       }
     }
