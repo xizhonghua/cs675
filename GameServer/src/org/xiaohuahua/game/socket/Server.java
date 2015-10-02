@@ -1,16 +1,23 @@
 package org.xiaohuahua.game.socket;
 
+import java.awt.Point;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.MessageDigestSpi;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 
+import org.xiaohuahua.game.common.Base64Util;
 import org.xiaohuahua.game.common.Config;
+import org.xiaohuahua.game.common.GameMap;
 import org.xiaohuahua.game.common.Player;
 
 public class Server {
@@ -31,6 +38,10 @@ public class Server {
    * Players in the scene
    */
   private static List<Player> players = new ArrayList<Player>();
+
+  private static Random r = new Random(new Date().getTime());
+
+  private static GameMap map;
 
   /**
    * A handler thread class. Handlers are spawned from the listening loop and
@@ -53,6 +64,16 @@ public class Server {
       this.socket = socket;
     }
 
+    // Send the map to player
+    private void sendMap() {
+      Message.send(out, Message.SET_MAP, Server.map);
+    }
+
+    private void sendPos() {
+      Message.send(out, Message.SET_POS,
+          this.player.getX() + " " + this.player.getY());
+    }
+
     private boolean handlePlayerEnter() throws IOException {
       player = new Player();
 
@@ -61,7 +82,7 @@ public class Server {
       // checking for the existence of a name and adding the name
       // must be done while locking the set of names.
       while (true) {
-        out.println(Message.REQUEST_NAME);
+        out.println(Message.REQ_NAME);
         name = in.readLine();
         if (name == null) {
           return false;
@@ -76,7 +97,31 @@ public class Server {
         }
       }
 
+      player.setX(r.nextInt(Config.MAP_WIDTH));
+      player.setY(r.nextInt(Config.MAP_HEIGHT));
+
+      // Add player to the list
+      Server.map.addPlayer(player);
+
+      this.broadCast(Message.ADD_PLAYER, player);
+
+      // Add player's out to list
+      writers.add(out);
+
       return true;
+    }
+
+    /**
+     * Send messages to all clinets
+     * 
+     * @param tag
+     * @param body
+     */
+    private void broadCast(String tag, Serializable body) {
+
+      for (PrintWriter writer : writers) {
+        Message.send(writer, tag, body);
+      }
     }
 
     /**
@@ -95,22 +140,38 @@ public class Server {
         if (!this.handlePlayerEnter())
           return;
 
-        // Add player to the list
-        players.add(player);
-        // Add player's out to list
-        writers.add(out);
+        // send map info to player
+        this.sendMap();
 
-        out.println("NAMEACCEPTED");
+        // send player's init position
+        this.sendPos();
 
         // Accept messages from this client and broadcast them.
         // Ignore other clients that cannot be broadcasted to.
         while (true) {
           String input = in.readLine();
           if (input == null) {
-            return;
+            break;
           }
-          for (PrintWriter writer : writers) {
-            writer.println("MESSAGE " + name + ": " + input);
+
+          if (input.startsWith(Message.REQ_MOVE)) {
+            Point dp = Message.parsePointMessage(input);
+            if (player.move(dp)) {
+              this.broadCast(Message.UPDATE_PLAYER, player);
+            }
+          }
+
+          if (input.startsWith(Message.REQ_PICK_UP)) {
+            int x = this.player.getX();
+            int y = this.player.getY();
+            int score = 0;
+            synchronized (Server.map) {
+              score = Server.map.getScore(x, y);
+              map.setScore(x, y, 0);
+            }
+            player.setScore(player.getScore() + score);
+            Message.send(out, Message.SET_SCORE, player.getScore());
+            this.broadCast(Message.CLEAR_SCORE, x + " " + y);
           }
         }
       } catch (IOException e) {
@@ -124,12 +185,30 @@ public class Server {
         if (out != null) {
           writers.remove(out);
         }
+
+        this.broadCast(Message.REMOVE_PLAYER, this.player);
+
         try {
           socket.close();
         } catch (IOException e) {
         }
       }
     }
+  }
+
+  public static void generateMap() {
+    Server.map = new GameMap();
+    for (int i = 0; i < Config.MAP_HEIGHT; ++i)
+      for (int j = 0; j < Config.MAP_WIDTH; ++j) {
+        if (r.nextDouble() < Config.GEM_PROB) {
+          int score = Config.SCORE_BASE
+              * (r.nextInt(Config.MAX_SCORE - Config.MIN_SCORE)
+                  + Config.MIN_SCORE);
+          Server.map.setScore(j, i, score);
+        } else {
+          Server.map.setScore(j, i, 0);
+        }
+      }
   }
 
   public static void main(String args[]) {
@@ -141,6 +220,7 @@ public class Server {
     try {
       ServerSocket server = new ServerSocket(port);
       System.out.println("Server lintening on port: " + port);
+      Server.generateMap();
 
       try {
         while (true) {
