@@ -29,7 +29,7 @@ public class Scene extends JFrame {
     setVisible(true);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-    Scene self = this;
+    final Scene self = this;
 
     this.addKeyListener(new KeyListener() {
 
@@ -48,28 +48,28 @@ public class Scene extends JFrame {
 
           switch (e.getKeyCode()) {
           case KeyEvent.VK_ESCAPE:
-            if (client != null)
-              client.leave();
+            if (self.client != null)
+              self.client.leave();
             break;
           case KeyEvent.VK_UP:
-            if (client != null)
-              client.move(0, -1);
+            if (self.client != null)
+              self.client.move(0, -1);
             break;
           case KeyEvent.VK_DOWN:
-            if (client != null)
-              client.move(0, 1);
+            if (self.client != null)
+              self.client.move(0, 1);
             break;
           case KeyEvent.VK_LEFT:
-            if (client != null)
-              client.move(-1, 0);
+            if (self.client != null)
+              self.client.move(-1, 0);
             break;
           case KeyEvent.VK_RIGHT:
-            if (client != null)
-              client.move(1, 0);
+            if (self.client != null)
+              self.client.move(1, 0);
             break;
           case KeyEvent.VK_SPACE:
-            if (client != null)
-              client.openChest();
+            if (self.client != null)
+              self.client.openChest();
             break;
           }
 
