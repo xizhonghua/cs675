@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 
-import org.xiaohuahua.game.common.Base64Util;
+import org.xiaohuahua.game.common.SerializationUtil;
 
 public class Message {
   public static final String REQ_NAME = "REQ_NAME";
@@ -42,7 +42,7 @@ public class Message {
    */
   public static void send(PrintWriter out, String tag, Serializable body) {
     try {
-      out.println(tag + " " + Base64Util.toString(body));
+      out.println(tag + " " + SerializationUtil.toString(body));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -54,7 +54,7 @@ public class Message {
       String body = line.substring(index + 1);
       Object obj = null;
       try {
-        obj = Base64Util.fromString(body);
+        obj = SerializationUtil.fromString(body);
       } catch (ClassNotFoundException | IOException e) {
         e.printStackTrace();
       }

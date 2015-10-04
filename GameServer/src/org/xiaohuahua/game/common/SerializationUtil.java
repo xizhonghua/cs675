@@ -6,13 +6,13 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Base64;
 
-public class Base64Util {
+public class SerializationUtil {
   /** Read the object from Base64 string. */
   public static Object fromString(String s)
       throws IOException, ClassNotFoundException {
-    byte[] data = Base64.getDecoder().decode(s);
+
+    byte[] data = Base64.decode(s);
     ObjectInputStream ois = new ObjectInputStream(
         new ByteArrayInputStream(data));
     Object o = ois.readObject();
@@ -26,6 +26,7 @@ public class Base64Util {
     ObjectOutputStream oos = new ObjectOutputStream(baos);
     oos.writeObject(o);
     oos.close();
-    return Base64.getEncoder().encodeToString(baos.toByteArray());
+
+    return Base64.encodeBytes(baos.toByteArray());
   }
 }
