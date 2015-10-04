@@ -84,12 +84,9 @@ public class TestClient {
       port = Integer.parseInt(args[2]);
     }
 
-    try {
-      // warmup
-      TestClient client = new TestClient(name, host, port);
-      client.run(10, 1000);
+    try {   
 
-      for (int ml = 10; ml <= 100000; ml *= 10) {
+      for (int ml = 1; ml <= 100000; ml *= 10) {
         TestClient client2 = new TestClient(name, host, port);
         client2.run(ml, 1000);
       }

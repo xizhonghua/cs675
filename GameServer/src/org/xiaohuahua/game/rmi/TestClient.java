@@ -55,7 +55,7 @@ public class TestClient {
       e.printStackTrace();
     }
 
-    for (int ml = 10; ml <= 100000; ml *= 10) {
+    for (int ml = 1; ml <= 100000; ml *= 10) {
       TestClient client = new TestClient(name, server);
       client.runTest(ml, 1000);
     }
