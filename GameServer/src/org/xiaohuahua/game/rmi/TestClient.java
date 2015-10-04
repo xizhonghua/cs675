@@ -29,7 +29,7 @@ public class TestClient {
     }
 
     long endTime = System.nanoTime();
-    double opTime = (endTime - startTime) / 1e6;
+    double opTime = (endTime - startTime) / 1e6 / count;
 
     System.out.println(
         "Length = " + msg.length() + " op time = " + opTime + "ms");

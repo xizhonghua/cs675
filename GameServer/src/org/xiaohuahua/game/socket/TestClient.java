@@ -54,7 +54,7 @@ public class TestClient {
           out.println(echoMsg);
         } else {
           long endTime = System.nanoTime();
-          double opTime = (endTime - startTime) / 1e6;
+          double opTime = (endTime - startTime) / 1e6 / count;
           System.out.println(
               "Length = " + echoMsg.length() + " op time = " + opTime + "ms");
           socket.close();
