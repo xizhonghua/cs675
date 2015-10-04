@@ -20,6 +20,9 @@ RUN_CMD = java -Djava.security.policy=java.policy \
 RUN_SOCKET_SERVER = ${RUN_CMD} $(SOCKET_SERVER_CLASS)
 RUN_SOCKET_CLIENT = ${RUN_CMD} ${SOCKET_CLIENT_CLASS}
 
+RUN_RMI_SERVER = ${RUN_CMD} $(RMI_SERVER_CLASS)
+RUN_RMI_CLIENT = ${RUN_CMD} $(RMI_CLIENT_CLASS)
+
 .SUFFIXES: .java .class
 
 .java.class:
@@ -42,6 +45,9 @@ backup:
 			README.* \
 			report/*.pdf
 
+#############################################
+# Socket 
+#############################################
 run_socket_server: classes
 	${RUN_SOCKET_SERVER}
 
@@ -50,3 +56,27 @@ run_local_socket_client: classes
 
 run_socket_client: classes
 	${RUN_SOCKET_CLIENT} ${SERVER}
+
+#############################################
+# RMI
+#############################################
+run_rmi_server: classes
+	${RUN_RMI_SERVER}
+
+run_rmi_client1: classes
+	${RUN_RMI_CLIENT} Player1 ${SERVER}
+
+run_rmi_client2: classes
+	${RUN_RMI_CLIENT} Player2 ${SERVER}
+
+run_rmi_client3: classes
+	${RUN_RMI_CLIENT} Player3 ${SERVER}
+
+run_local_rmi_client1: classes
+	${RUN_RMI_CLIENT} Player1 ${LOCAL_SERVER} 
+
+run_local_rmi_client2: classes
+	${RUN_RMI_CLIENT} Player2 ${LOCAL_SERVER} 
+
+run_local_rmi_client3: classes
+	${RUN_RMI_CLIENT} Player3 ${LOCAL_SERVER} 

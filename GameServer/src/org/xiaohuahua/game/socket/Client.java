@@ -9,11 +9,10 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.security.MessageDigestSpi;
 import java.util.Date;
 
 import org.xiaohuahua.game.common.Config;
-import org.xiaohuahua.game.common.GameMap;
+import org.xiaohuahua.game.common.GameWorld;
 import org.xiaohuahua.game.common.Player;
 import org.xiaohuahua.game.common.Scene;
 
@@ -25,7 +24,7 @@ public class Client {
   private PrintWriter out;
   private Socket socket;
   private Player player;
-  private GameMap map;
+  private GameWorld map;
 
   public Client(String host, int port)
       throws UnknownHostException, IOException {
@@ -110,7 +109,7 @@ public class Client {
         out.println(this.player.getName());
       }
       if (line.startsWith(Message.SET_MAP)) {
-        this.map = (GameMap) Message.parseMessage(line);
+        this.map = (GameWorld) Message.parseMessage(line);
         this.scene.setMap(this.map);
         this.scene.setMe(this.player);
         this.scene.repaint();
@@ -135,7 +134,7 @@ public class Client {
 
       if (line.startsWith(Message.CLEAR_SCORE)) {
         Point p = Message.parsePointMessage(line);
-        this.map.setScore(p.x, p.y, 0);
+        this.map.removeChest(p);
       }
 
       if (line.startsWith(Message.ADD_PLAYER)) {

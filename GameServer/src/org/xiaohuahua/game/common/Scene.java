@@ -5,7 +5,6 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 
 import javax.swing.JFrame;
-import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
@@ -16,7 +15,7 @@ public class Scene extends JFrame {
    */
   private static final long serialVersionUID = 1L;
 
-  private GameMap map;
+  private GameWorld map;
   private Player player;
 
   public Scene(String title) {
@@ -28,7 +27,7 @@ public class Scene extends JFrame {
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
   }
 
-  public void setMap(GameMap map) {
+  public void setMap(GameWorld map) {
     this.map = map;
   }
 

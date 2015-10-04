@@ -7,20 +7,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
-import org.xiaohuahua.game.socket.Server;
 
-public class GameMap implements Serializable {
+public class GameWorld implements Serializable {
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
 
-  private int[][] score;
   private List<Player> players;
   private List<Chest> chests;
 
-  public GameMap() {
-    this.score = new int[Config.MAP_HEIGHT][Config.MAP_WIDTH];
+  public GameWorld() {
     this.players = new ArrayList<>();
     this.chests = new ArrayList<>();
   }
@@ -33,11 +30,19 @@ public class GameMap implements Serializable {
   }
 
   public int getScore(int x, int y) {
-    return this.score[y][x];
+    // return this.score[y][x];
+    Chest c = this.getChestByLocation(new Point(x, y));
+    if (c == null)
+      return 0;
+    return c.getValue();
   }
-
-  public int setScore(int x, int y, int score) {
-    return this.score[y][x] = score;
+  
+  
+  public Player getPlayerByName(String name) {
+    for (Player p : this.players)
+      if (p.getName().equals(name))
+        return p;
+    return null;
   }
 
   public Player getPlayer(int x, int y) {
@@ -114,8 +119,8 @@ public class GameMap implements Serializable {
     return null;
   }
 
-  public static GameMap generateRandomMap() {
-    GameMap map = new GameMap();
+  public static GameWorld generateRandomMap() {
+    GameWorld map = new GameWorld();
     Random r = new Random(new Date().getTime());
 
     for (int i = 0; i < Config.MAP_HEIGHT; ++i)

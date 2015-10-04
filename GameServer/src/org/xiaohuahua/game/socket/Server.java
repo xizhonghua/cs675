@@ -8,16 +8,12 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.MessageDigestSpi;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Random;
 
-import org.xiaohuahua.game.common.Base64Util;
 import org.xiaohuahua.game.common.Config;
-import org.xiaohuahua.game.common.GameMap;
+import org.xiaohuahua.game.common.GameWorld;
 import org.xiaohuahua.game.common.Player;
 
 public class Server {
@@ -34,14 +30,9 @@ public class Server {
    */
   private static HashSet<PrintWriter> writers = new HashSet<PrintWriter>();
 
-  /**
-   * Players in the scene
-   */
-  private static List<Player> players = new ArrayList<Player>();
-
   private static Random r = new Random(new Date().getTime());
 
-  private static GameMap map;
+  private static GameWorld map;
 
   /**
    * A handler thread class. Handlers are spawned from the listening loop and
@@ -164,12 +155,10 @@ public class Server {
           if (input.startsWith(Message.REQ_PICK_UP)) {
             int x = this.player.getX();
             int y = this.player.getY();
-            int score = 0;
-            synchronized (Server.map) {
-              score = Server.map.getScore(x, y);
-              map.setScore(x, y, 0);
-            }
-            player.setValue(player.getValue() + score);
+            int value = 0;
+            Point loc = new Point(x, y);
+            value = Server.map.openChest(loc);
+            player.setValue(player.getValue() + value);
             Message.send(out, Message.SET_SCORE, player.getValue());
             this.broadCast(Message.CLEAR_SCORE, x + " " + y);
           }
@@ -196,19 +185,8 @@ public class Server {
     }
   }
 
-  public static void generateMap() {
-    Server.map = new GameMap();
-    for (int i = 0; i < Config.MAP_HEIGHT; ++i)
-      for (int j = 0; j < Config.MAP_WIDTH; ++j) {
-        if (r.nextDouble() < Config.GEM_PROB) {
-          int score = Config.SCORE_BASE
-              * (r.nextInt(Config.MAX_SCORE - Config.MIN_SCORE)
-                  + Config.MIN_SCORE);
-          Server.map.setScore(j, i, score);
-        } else {
-          Server.map.setScore(j, i, 0);
-        }
-      }
+  public static void init() {
+    Server.map = GameWorld.generateRandomMap();
   }
 
   public static void main(String args[]) {
@@ -220,7 +198,7 @@ public class Server {
     try {
       ServerSocket server = new ServerSocket(port);
       System.out.println("Server lintening on port: " + port);
-      Server.generateMap();
+      Server.init();
 
       try {
         while (true) {

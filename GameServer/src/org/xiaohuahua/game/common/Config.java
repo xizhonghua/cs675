@@ -11,4 +11,7 @@ public class Config {
   public static final int MAX_SCORE = 25;
   public static final int SCORE_BASE = 100;
   
+  
+  public static final String GAME_SERVICE_NAME = "XIAOHUAHUA_GAME_SERVICE";
+  
 }
