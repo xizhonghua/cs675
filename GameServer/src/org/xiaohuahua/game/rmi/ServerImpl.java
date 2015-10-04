@@ -36,7 +36,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteServer {
     if (inited)
       return;
     this.r = new Random(new Date().getTime());
-    this.world = new GameWorld();
+    this.world = GameWorld.generateRandomMap();
     this.tokens = new HashMap<>();
 
     inited = true;
@@ -86,6 +86,8 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteServer {
     // Create mapping
     this.tokens.put(token, player);
 
+    System.out.print("[Server] Player " + name + " entered!");
+
     return token;
   }
 
@@ -94,13 +96,18 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteServer {
     Player p = this.getPlayerByToken(token);
     this.world.removePlayer(p.getName());
     this.tokens.remove(token);
+
+    System.out.print("[Server] Player " + p.getName() + " left!");
+
     return true;
   }
 
   @Override
   public int open(String token) throws RemoteException {
     Player p = this.getPlayerByToken(token);
-    return this.world.openChest(p.getLocation());
+    int value = this.world.openChest(p.getLocation());
+    p.setValue(p.getValue() + value);
+    return value;
   }
 
 }

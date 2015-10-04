@@ -25,6 +25,7 @@ public class GameWorld implements Serializable {
   public List<GameObject> getObjects() {
     List<GameObject> list = new ArrayList<>();
     list.addAll(this.players);
+    list.addAll(this.chests);
 
     return list;
   }
@@ -130,10 +131,20 @@ public class GameWorld implements Serializable {
               * (r.nextInt(Config.MAX_SCORE - Config.MIN_SCORE)
                   + Config.MIN_SCORE);
           Chest c = new Chest(j, i, value);
-          map.chests.add(c);
+          map.chests.add(c);          
         }
       }
 
     return map;
+  }
+
+  public void initWithObjects(List<GameObject> objects) {
+    for(GameObject obj : objects) {
+      if(obj instanceof Player)
+        this.players.add((Player)obj);
+      else if(obj instanceof Chest) {
+        this.chests.add((Chest)obj);        
+      }
+    }    
   }
 }
