@@ -36,12 +36,14 @@ clean:
 	rm -f $(CLASSES)
 
 backup:
-	tar -c -f cs675_p1_zhonghua.tar \
-            Makefile \
-            java.policy \
-            src/* \
-            README.* \
-            report/*.pdf
+	tar -cvf \
+			cs675_p1_zhonghua.tar \
+			--exclude='*.class' \
+			Makefile \
+			java.policy \
+			src/* \
+			README.* \
+			report/*.pdf
 
 
 ################################
