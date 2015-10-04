@@ -5,12 +5,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.UnknownHostException;
-import java.util.UUID;
 
 import org.xiaohuahua.game.common.Config;
 import org.xiaohuahua.game.common.Player;
+import org.xiaohuahua.game.common.StrUtil;
 
 public class TestClient {
   private BufferedReader in;
@@ -26,17 +25,6 @@ public class TestClient {
     this.socket = new Socket(host, port);
   }
 
-  public String getRandomStr(int minLen) {
-    StringBuffer sb = new StringBuffer(minLen);
-    sb.append(Message.ECHO + " ");
-    while (sb.length() < minLen) {
-      String uuid = UUID.randomUUID().toString();
-      sb.append(uuid);
-    }
-
-    return sb.toString();
-  }
-
   public void run(int minLen, int msgToSend) throws IOException {
 
     System.out.println("Test client started!");
@@ -46,7 +34,7 @@ public class TestClient {
 
     this.player = new Player(this.name, 0, 0);
 
-    String echoMsg = this.getRandomStr(minLen);
+    String echoMsg = StrUtil.getRandomStr(minLen);
 
     long startTime = 0;
     long count = 0;

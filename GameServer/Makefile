@@ -6,6 +6,7 @@ SOCKET_CLIENT_CLASS = org.xiaohuahua.game.socket.Client
 SOCKET_TEST_CLIENT_CLASS = org.xiaohuahua.game.socket.TestClient
 RMI_SERVER_CLASS = org.xiaohuahua.game.rmi.Server
 RMI_CLIENT_CLASS = org.xiaohuahua.game.rmi.Client
+RMI_TEST_CLIENT_CLASS = org.xiaohuahua.game.rmi.TestClient
 # local server address
 LOCAL_SERVER = localhost
 # server address
@@ -22,8 +23,10 @@ RUN_SOCKET_SERVER = ${RUN_CMD} $(SOCKET_SERVER_CLASS)
 RUN_SOCKET_CLIENT = ${RUN_CMD} ${SOCKET_CLIENT_CLASS}
 RUN_SOCKET_TEST_CLIENT = ${RUN_CMD} ${SOCKET_TEST_CLIENT_CLASS}
 
+
 RUN_RMI_SERVER = ${RUN_CMD} $(RMI_SERVER_CLASS)
 RUN_RMI_CLIENT = ${RUN_CMD} $(RMI_CLIENT_CLASS)
+RUN_RMI_TEST_CLIENT = ${RUN_CMD} $(RMI_TEST_CLIENT_CLASS)
 
 .SUFFIXES: .java .class
 
@@ -92,12 +95,17 @@ run_rmi_client2: classes
 run_rmi_client3: classes
 	${RUN_RMI_CLIENT} Player3 ${SERVER}
 
+run_local_rmi_test_client: classes
+	${RUN_RMI_TEST_CLIENT} test ${SERVER} 
+
 run_local_rmi_client1: classes
 	${RUN_RMI_CLIENT} Player1 ${LOCAL_SERVER} 
-
 
 run_local_rmi_client2: classes
 	${RUN_RMI_CLIENT} Player2 ${LOCAL_SERVER} 
 
 run_local_rmi_client3: classes
 	${RUN_RMI_CLIENT} Player3 ${LOCAL_SERVER} 
+
+run_local_rmi_test_client: classes
+	${RUN_RMI_TEST_CLIENT} test ${LOCAL_SERVER} 

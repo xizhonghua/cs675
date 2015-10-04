@@ -75,6 +75,16 @@ public class Client implements IClient {
     player = this.world.getPlayerByName(this.name);
   }
 
+  @Override
+  public GameWorld getWorld() {
+    return this.world;
+  }
+
+  @Override
+  public Player getMe() {
+    return this.player;
+  }
+
   public static void main(String[] args) throws RemoteException {
 
     if (args.length < 1) {
@@ -99,13 +109,4 @@ public class Client implements IClient {
     client.run();
   }
 
-  @Override
-  public GameWorld getWorld() {
-    return this.world;
-  }
-
-  @Override
-  public Player getMe() {
-    return this.player;
-  }
 }
