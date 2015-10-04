@@ -20,16 +20,18 @@ public class Message {
   public static final String SET_MAP = "SET_MAP";
 
   public static final String REQ_MOVE = "REQ_MOVE";
-  public static final String REQ_PICK_UP = "REQ_PICK_UP";
+  public static final String REQ_OPEN = "REQ_OPEN";
+
+  public static final String REQ_LEAVE = "REQ_LEAVE";
 
   public static final String UPDATE_PLAYER = "UPDATE_PLAYER";
   public static final String ADD_PLAYER = "ADD_PLAYER";
   public static final String REMOVE_PLAYER = "REMOVE_PLAYER";
 
   /**
-   * parameter x,y score at map x, y becomes 0
+   * parameter x,y remove chest on x,y
    */
-  public static final String CLEAR_SCORE = "CLEAR_SCORE";
+  public static final String REMOVE_CHEST = "REMOVE_CHEST";
 
   /**
    * Send the message out
@@ -44,7 +46,7 @@ public class Message {
     } catch (IOException e) {
       e.printStackTrace();
     }
-  }
+  }  
 
   public static Object parseMessage(String line) {
     int index = line.indexOf(" ");
@@ -58,6 +60,15 @@ public class Message {
       }
       return obj;
     }
+    return null;
+  }
+
+  public static String getTag(String line) {
+    int index = line.indexOf(" ");
+    if (index >= 0 && index < line.length()) {
+      return line.substring(0, index);
+    }
+
     return null;
   }
 

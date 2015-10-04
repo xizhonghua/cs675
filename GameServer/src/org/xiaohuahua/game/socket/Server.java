@@ -32,7 +32,7 @@ public class Server {
 
   private static Random r = new Random(new Date().getTime());
 
-  private static GameWorld map;
+  private static GameWorld world;
 
   /**
    * A handler thread class. Handlers are spawned from the listening loop and
@@ -46,6 +46,7 @@ public class Server {
     private PrintWriter out;
 
     private Player player;
+    private boolean inGame;
 
     /**
      * Constructs a handler thread, squirreling away the socket. All the
@@ -57,7 +58,7 @@ public class Server {
 
     // Send the map to player
     private void sendMap() {
-      Message.send(out, Message.SET_MAP, Server.map);
+      Message.send(out, Message.SET_MAP, Server.world);
     }
 
     private void sendPos() {
@@ -82,7 +83,8 @@ public class Server {
           if (!names.contains(name)) {
             names.add(name);
             player.setName(name);
-            System.out.print("Player " + name + " entered scene!");
+            System.out
+                .println("[SocketServer] Player " + name + " entered scene!");
             break;
           }
         }
@@ -92,14 +94,59 @@ public class Server {
       player.setY(r.nextInt(Config.MAP_HEIGHT));
 
       // Add player to the list
-      Server.map.addPlayer(player);
+      Server.world.addPlayer(player);
 
       this.broadCast(Message.ADD_PLAYER, player);
 
       // Add player's out to list
       writers.add(out);
 
+      inGame = true;
+
       return true;
+    }
+
+    private void handlePlayerLeave() {
+
+      if (this.player == null)
+        return;
+
+      // This client is going down! Remove its name and its print
+      // writer from the sets, and close its socket.
+      if (name != null) {
+        names.remove(name);
+      }
+      if (out != null) {
+        writers.remove(out);
+      }
+
+      // remove player from world
+      Server.world.removePlayer(this.player.getName());
+
+      // broadcast leaving message
+      this.broadCast(Message.REMOVE_PLAYER, this.player);
+
+      System.out.println("[SocketServer] " + this.player.getName() + " left!");
+
+      this.player = null;
+      this.inGame = false;
+
+      try {
+        socket.close();
+      } catch (IOException e) {
+      }
+
+    }
+
+    private void handleOpenChest(String msg) {
+      Point loc = this.player.getLocation();
+      int value = Server.world.openChest(loc);
+      if (value > 0) {
+        player.setValue(player.getValue() + value);
+        Message.send(out, Message.SET_SCORE, player.getValue());
+        this.broadCast(Message.REMOVE_CHEST, loc.x + " " + loc.y);
+        this.broadCast(Message.UPDATE_PLAYER, player);
+      }
     }
 
     /**
@@ -137,56 +184,37 @@ public class Server {
         // send player's init position
         this.sendPos();
 
-        // Accept messages from this client and broadcast them.
-        // Ignore other clients that cannot be broadcasted to.
-        while (true) {
-          String input = in.readLine();
-          if (input == null) {
+        while (this.inGame) {
+          String msg = in.readLine();
+          if (msg == null) {
             break;
           }
 
-          if (input.startsWith(Message.REQ_MOVE)) {
-            Point dp = Message.parsePointMessage(input);
+          if (msg.startsWith(Message.REQ_MOVE)) {
+            Point dp = Message.parsePointMessage(msg);
             if (player.move(dp)) {
               this.broadCast(Message.UPDATE_PLAYER, player);
             }
           }
 
-          if (input.startsWith(Message.REQ_PICK_UP)) {
-            int x = this.player.getX();
-            int y = this.player.getY();
-            int value = 0;
-            Point loc = new Point(x, y);
-            value = Server.map.openChest(loc);
-            player.setValue(player.getValue() + value);
-            Message.send(out, Message.SET_SCORE, player.getValue());
-            this.broadCast(Message.CLEAR_SCORE, x + " " + y);
+          if (msg.startsWith(Message.REQ_OPEN)) {
+            this.handleOpenChest(msg);
+          }
+
+          if (msg.startsWith(Message.REQ_LEAVE)) {
+            this.handlePlayerLeave();
           }
         }
       } catch (IOException e) {
         System.out.println(e);
       } finally {
-        // This client is going down! Remove its name and its print
-        // writer from the sets, and close its socket.
-        if (name != null) {
-          names.remove(name);
-        }
-        if (out != null) {
-          writers.remove(out);
-        }
-
-        this.broadCast(Message.REMOVE_PLAYER, this.player);
-
-        try {
-          socket.close();
-        } catch (IOException e) {
-        }
+        this.handlePlayerLeave();
       }
     }
   }
 
   public static void init() {
-    Server.map = GameWorld.generateRandomMap();
+    Server.world = GameWorld.generateRandomMap();
   }
 
   public static void main(String args[]) {

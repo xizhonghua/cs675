@@ -16,12 +16,12 @@ public class Server {
 
       // bind game service
       System.out.println(
-          "[Server] Registering Game Service " + Config.GAME_SERVICE_NAME);
+          "[RMIServer] Registering Game Service " + Config.GAME_SERVICE_NAME);
       Naming.rebind(Config.GAME_SERVICE_NAME, server);
 
-      System.out.println("[Server] Ready...");
+      System.out.println("[RMIServer] Ready...");
     } catch (Exception e) {
-      System.out.println("[Server] Error: " + e);
+      System.out.println("[RMIServer] Error: " + e);
       e.printStackTrace();
     }
   }

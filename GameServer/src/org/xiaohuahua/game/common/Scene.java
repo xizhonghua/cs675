@@ -3,6 +3,8 @@ package org.xiaohuahua.game.common;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
@@ -15,24 +17,74 @@ public class Scene extends JFrame {
    */
   private static final long serialVersionUID = 1L;
 
-  private GameWorld map;
-  private Player player;
+  private IClient client;
 
-  public Scene(String title) {
+  public Scene(IClient client) {
+
+    this.client = client;
 
     setSize(new Dimension(Config.MAP_BLOCK_SIZE * Config.MAP_WIDTH,
         Config.MAP_BLOCK_SIZE * Config.MAP_HEIGHT));
 
     setVisible(true);
     setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+
+    Scene self = this;
+
+    this.addKeyListener(new KeyListener() {
+
+      @Override
+      public void keyTyped(KeyEvent e) {
+      }
+
+      @Override
+      public void keyReleased(KeyEvent e) {
+      }
+
+      @Override
+      public void keyPressed(KeyEvent e) {
+
+        try {
+
+          switch (e.getKeyCode()) {
+          case KeyEvent.VK_ESCAPE:
+            if (client != null)
+              client.leave();
+            break;
+          case KeyEvent.VK_UP:
+            if (client != null)
+              client.move(0, -1);
+            break;
+          case KeyEvent.VK_DOWN:
+            if (client != null)
+              client.move(0, 1);
+            break;
+          case KeyEvent.VK_LEFT:
+            if (client != null)
+              client.move(-1, 0);
+            break;
+          case KeyEvent.VK_RIGHT:
+            if (client != null)
+              client.move(1, 0);
+            break;
+          case KeyEvent.VK_SPACE:
+            if (client != null)
+              client.openChest();
+            break;
+          }
+
+          self.render();
+        } catch (Exception exeption) {
+          System.out.println("Error: " + exeption);
+          exeption.printStackTrace();
+        }
+      }
+    });
   }
 
-  public void setMap(GameWorld map) {
-    this.map = map;
-  }
-
-  public void setMe(Player player) {
-    this.player = player;
+  public void render() {
+    this.repaint();
+    this.setTitle(client.getMe().toString());
   }
 
   private void drawMap(Graphics g) {
@@ -41,7 +93,7 @@ public class Scene extends JFrame {
         int x = j * Config.MAP_BLOCK_SIZE;
         int y = i * Config.MAP_BLOCK_SIZE;
 
-        int score = this.map.getScore(j, i);
+        int score = this.client.getWorld().getScore(j, i);
 
         if (score != 0) {
           g.setColor(Color.green);
@@ -60,17 +112,21 @@ public class Scene extends JFrame {
   }
 
   private void drawPlayers(Graphics g) {
+
+    GameWorld world = this.client.getWorld();
+
     g.setColor(Color.blue);
-    for (Player p : map.getPlayers()) {
+    for (Player p : world.getPlayers()) {
       this.drawPlayer(g, p);
     }
+
     g.setColor(Color.red);
-    this.drawPlayer(g, this.player);
+    this.drawPlayer(g, this.client.getMe());
   }
 
   public void paint(Graphics g) {
 
-    if (map == null)
+    if (this.client.getWorld() == null)
       return;
 
     this.drawMap(g);
@@ -85,7 +141,7 @@ public class Scene extends JFrame {
       @Override
       public void run() {
         // TODO Auto-generated method stub
-        new Scene("Test");
+        new Scene(null);
       }
     });
   }

@@ -51,11 +51,23 @@ backup:
 run_socket_server: classes
 	${RUN_SOCKET_SERVER}
 
-run_local_socket_client: classes
-	${RUN_SOCKET_CLIENT} ${LOCAL_SERVER}
+run_local_socket_client1: classes
+	${RUN_SOCKET_CLIENT} Player1 ${LOCAL_SERVER}
 
-run_socket_client: classes
-	${RUN_SOCKET_CLIENT} ${SERVER}
+run_local_socket_client2: classes
+	${RUN_SOCKET_CLIENT} Player2 ${LOCAL_SERVER}
+
+run_local_socket_client3: classes
+	${RUN_SOCKET_CLIENT} Player3 ${LOCAL_SERVER}
+
+run_socket_client1: classes
+	${RUN_SOCKET_CLIENT} Player1 ${SERVER}
+
+run_socket_client2: classes
+	${RUN_SOCKET_CLIENT} Player2 ${SERVER}
+
+run_socket_client3: classes
+	${RUN_SOCKET_CLIENT} Player3 ${SERVER}
 
 #############################################
 # RMI

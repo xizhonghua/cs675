@@ -86,7 +86,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteServer {
     // Create mapping
     this.tokens.put(token, player);
 
-    System.out.print("[Server] Player " + name + " entered!");
+    System.out.println("[RMIServer] Player " + name + " entered!");
 
     return token;
   }
@@ -97,7 +97,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteServer {
     this.world.removePlayer(p.getName());
     this.tokens.remove(token);
 
-    System.out.print("[Server] Player " + p.getName() + " left!");
+    System.out.println("[RMIServer] Player " + p.getName() + " left!");
 
     return true;
   }

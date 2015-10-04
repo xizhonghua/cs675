@@ -45,6 +45,11 @@ public abstract class GameObject implements Serializable {
     if (this.x < 0)
       this.x = 0;
   }
+  
+  public void setLocation(Point location){
+    this.x = (int) location.getX();
+    this.y = (int) location.getY();
+  }
 
   public void setY(int y) {
     this.y = y;
