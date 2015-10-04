@@ -8,6 +8,9 @@ import java.io.Serializable;
 import org.xiaohuahua.game.common.SerializationUtil;
 
 public class Message {
+
+  public static final String ECHO = "ECHO";
+
   public static final String REQ_NAME = "REQ_NAME";
 
   public static final String SET_NAME = "SET_NAME";
@@ -46,7 +49,7 @@ public class Message {
     } catch (IOException e) {
       e.printStackTrace();
     }
-  }  
+  }
 
   public static Object parseMessage(String line) {
     int index = line.indexOf(" ");

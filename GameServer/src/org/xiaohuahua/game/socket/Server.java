@@ -54,6 +54,12 @@ public class Server {
      */
     public Handler(Socket socket) {
       this.socket = socket;
+      try {
+        this.socket.setSendBufferSize(102400);
+        this.socket.setReceiveBufferSize(102400);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
 
     // Send the map to player
@@ -188,6 +194,10 @@ public class Server {
           String msg = in.readLine();
           if (msg == null) {
             break;
+          }
+
+          if (msg.startsWith(Message.ECHO)) {
+            Message.send(out, msg, "");
           }
 
           if (msg.startsWith(Message.REQ_MOVE)) {

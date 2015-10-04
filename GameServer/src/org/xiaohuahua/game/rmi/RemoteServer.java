@@ -63,4 +63,13 @@ public interface RemoteServer extends Remote {
    * @return
    */
   public List<GameObject> getObjects() throws RemoteException;
+
+  /**
+   * Echo the input
+   * 
+   * @param input
+   * @return
+   * @throws RemoteException
+   */
+  public String echo(String input) throws RemoteException;
 }

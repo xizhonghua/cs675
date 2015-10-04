@@ -110,4 +110,9 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteServer {
     return value;
   }
 
+  @Override
+  public String echo(String input) throws RemoteException {
+    return input;
+  }
+
 }
