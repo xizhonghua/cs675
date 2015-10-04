@@ -18,6 +18,13 @@ public class GameMap implements Serializable {
     this.players = new ArrayList<>();
   }
 
+  public List<GameObject> getObjects() {
+    List<GameObject> list = new ArrayList<>();
+    list.addAll(this.players);
+
+    return list;
+  }
+
   public int getScore(int x, int y) {
     return this.score[y][x];
   }
@@ -36,7 +43,7 @@ public class GameMap implements Serializable {
   public boolean hasPlayer(int x, int y) {
     return getPlayer(x, y) == null;
   }
-  
+
   public List<Player> getPlayers() {
     return this.players;
   }
@@ -44,10 +51,10 @@ public class GameMap implements Serializable {
   public void addPlayer(Player p) {
     this.players.add(p);
   }
-  
+
   public void updatePlayer(Player p) {
-    for(int i=0;i<this.players.size();++i){
-      if(players.get(i).getName().equals(p.getName())) {
+    for (int i = 0; i < this.players.size(); ++i) {
+      if (players.get(i).getName().equals(p.getName())) {
         players.set(i, p);
         return;
       }
