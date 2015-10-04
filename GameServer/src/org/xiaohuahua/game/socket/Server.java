@@ -169,8 +169,8 @@ public class Server {
               score = Server.map.getScore(x, y);
               map.setScore(x, y, 0);
             }
-            player.setScore(player.getScore() + score);
-            Message.send(out, Message.SET_SCORE, player.getScore());
+            player.setValue(player.getValue() + score);
+            Message.send(out, Message.SET_SCORE, player.getValue());
             this.broadCast(Message.CLEAR_SCORE, x + " " + y);
           }
         }

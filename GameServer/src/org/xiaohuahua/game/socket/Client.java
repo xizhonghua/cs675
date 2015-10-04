@@ -130,7 +130,7 @@ public class Client {
       }
       if (line.startsWith(Message.SET_SCORE)) {
         Integer score = (Integer) Message.parseMessage(line);
-        this.player.setScore(score);
+        this.player.setValue(score);
       }
 
       if (line.startsWith(Message.CLEAR_SCORE)) {

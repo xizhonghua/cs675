@@ -3,12 +3,15 @@ SRCS = $(shell find $(SRC) -name *.java)
 CLASSES = $(SRCS:.java=.class)
 SOCKET_SERVER_CLASS = org.xiaohuahua.game.socket.Server
 SOCKET_CLIENT_CLASS = org.xiaohuahua.game.socket.Client
+RMI_SERVER_CLASS = org.xiaohuahua.game.rmi.Server
+RMI_CLIENT_CLASS = org.xiaohuahua.game.rmi.Client
+# local server address
 LOCAL_SERVER = localhost
-LOCAL_SERVER_NAME = ${LOCAL_SERVER} ${PEER1_NAME}
+# server address
 SERVER = medusa-node1.vsnet.gmu.edu
 
 JC = javac
-JFLAGS = -g -classpath $(SRC)
+JFLAGS = -classpath $(SRC)
 
 RUN_CMD = java -Djava.security.policy=java.policy \
 		 -Djava.rmi.server.codebase=file:$(SRC) \
@@ -31,7 +34,7 @@ clean:
 
 backup:
 	tar -cvf \
-			cs675_p1_zhonghua.tar \
+			cs675_p2_zhonghua.tar \
 			--exclude='*.class' \
 			Makefile \
 			java.policy \
@@ -44,3 +47,6 @@ run_socket_server: classes
 
 run_local_socket_client: classes
 	${RUN_SOCKET_CLIENT} ${LOCAL_SERVER}
+
+run_socket_client: classes
+	${RUN_SOCKET_CLIENT} ${SERVER}
