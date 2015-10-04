@@ -74,6 +74,9 @@ run_socket_client2: classes
 run_socket_client3: classes
 	${RUN_SOCKET_CLIENT} Player3 ${SERVER}
 
+run_socket_test_client: classes
+	${RUN_SOCKET_TEST_CLIENT} test ${SERVER} 
+
 #############################################
 # RMI
 #############################################
