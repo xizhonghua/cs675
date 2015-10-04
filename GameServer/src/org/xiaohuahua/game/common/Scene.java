@@ -17,7 +17,7 @@ public class Scene extends JFrame {
    */
   private static final long serialVersionUID = 1L;
 
-  private IClient client;
+  private final IClient client;
 
   public Scene(IClient client) {
 
