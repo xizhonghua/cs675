@@ -95,7 +95,7 @@ run_rmi_client2: classes
 run_rmi_client3: classes
 	${RUN_RMI_CLIENT} Player3 ${SERVER}
 
-run_local_rmi_client: classes
+run_rmi_test_client: classes
 	${RUN_RMI_TEST_CLIENT} test ${SERVER}
 
 run_local_rmi_client1: classes
