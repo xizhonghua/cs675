@@ -1,5 +1,6 @@
 package org.xiaohuahua.game.common;
 
+import java.awt.Point;
 import java.io.Serializable;
 
 public abstract class GameObject implements Serializable {
@@ -27,6 +28,10 @@ public abstract class GameObject implements Serializable {
 
   public int getY() {
     return y;
+  }
+  
+  public Point getLocation() {
+    return new Point(this.x, this.y);
   }
 
   public int getValue() {

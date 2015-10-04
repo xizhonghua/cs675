@@ -1,8 +1,13 @@
 package org.xiaohuahua.game.common;
 
+import java.awt.Point;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Random;
+
+import org.xiaohuahua.game.socket.Server;
 
 public class GameMap implements Serializable {
   /**
@@ -12,10 +17,12 @@ public class GameMap implements Serializable {
 
   private int[][] score;
   private List<Player> players;
+  private List<Chest> chests;
 
   public GameMap() {
     this.score = new int[Config.MAP_HEIGHT][Config.MAP_WIDTH];
     this.players = new ArrayList<>();
+    this.chests = new ArrayList<>();
   }
 
   public List<GameObject> getObjects() {
@@ -48,6 +55,10 @@ public class GameMap implements Serializable {
     return this.players;
   }
 
+  public List<Chest> getChests() {
+    return this.chests;
+  }
+
   public void addPlayer(Player p) {
     this.players.add(p);
   }
@@ -68,5 +79,56 @@ public class GameMap implements Serializable {
         return;
       }
     }
+  }
+
+  public void removeChest(Point location) {
+    Chest c = this.getChestByLocation(location);
+    if (c == null)
+      return;
+    this.chests.remove(c);
+  }
+
+  /**
+   * Try to open chest at given location
+   * 
+   * @param location
+   * @return
+   */
+
+  public int openChest(Point location) {
+    synchronized (this.chests) {
+      Chest c = this.getChestByLocation(location);
+      if (c == null)
+        return 0;
+
+      this.chests.remove(c);
+      return c.getValue();
+    }
+  }
+
+  private Chest getChestByLocation(Point location) {
+    for (Chest c : this.chests) {
+      if (c.getLocation().equals(location))
+        return c;
+    }
+    return null;
+  }
+
+  public static GameMap generateRandomMap() {
+    GameMap map = new GameMap();
+    Random r = new Random(new Date().getTime());
+
+    for (int i = 0; i < Config.MAP_HEIGHT; ++i)
+      for (int j = 0; j < Config.MAP_WIDTH; ++j) {
+        if (r.nextDouble() < Config.GEM_PROB) {
+          int value = Config.SCORE_BASE
+              * (r.nextInt(Config.MAX_SCORE - Config.MIN_SCORE)
+                  + Config.MIN_SCORE);
+          Chest c = new Chest(j, i, value);
+          map.chests.add(c);
+        }
+      }
+
+    return map;
   }
 }
