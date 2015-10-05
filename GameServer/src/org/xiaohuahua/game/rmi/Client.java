@@ -32,12 +32,7 @@ public class Client implements IClient {
     System.out.println("[Client] Entered game!");
 
     this.update();
-    this.render();
-  }
-
-  public void render() {
-    this.scene.repaint();
-    this.scene.setTitle(this.player.toString());
+    this.scene.render();
   }
 
   public void move(int dx, int dy) throws RemoteException {
@@ -72,7 +67,7 @@ public class Client implements IClient {
     this.world = new GameWorld();
     this.world.initWithObjects(objects);
     // get myself
-    player = this.world.getPlayerByName(this.name);
+    player = this.world.getPlayerByName(this.name);    
   }
 
   @Override
