@@ -1,6 +1,9 @@
 ### Distributed Systems Course Project: Game Server
 Zhonghua Xi, Oct. 2015
 
+#### Demo
+Video https://youtu.be/WiXmO5ZJrIA
+
 #### Build
 ```bash
 $ make
