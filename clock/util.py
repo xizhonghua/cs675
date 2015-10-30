@@ -4,7 +4,7 @@ import time
 
 
 def now():
-  return "{:.9f}".format(time.time())
+  return "{0:.15f}".format(time.time())
 
 
 if __name__ == "__main__":
