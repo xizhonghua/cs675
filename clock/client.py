@@ -91,6 +91,8 @@ while True:
       else:
         print datetime.now(), 'Network timeout'
 
+      sys.stdout.flush()
+
   except socket.timeout as e:
     pass
 
