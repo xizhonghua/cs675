@@ -8,9 +8,9 @@ UDP_PORT = 7778
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-sock.bind((UDP_IP, UDP_PORT))
+sock.bind(("", UDP_PORT))
 
-print 'Time Server listened at %s:%s' % (UDP_IP, UDP_PORT)
+print 'Time Server listened at port %s' % UDP_PORT
 
 while True:
   data, addr = sock.recvfrom(1024)
