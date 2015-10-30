@@ -9,6 +9,7 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \usepackage{subfigure}
+\usepackage{hyperref}
 
 \lstset{language=Java, basicstyle=\scriptsize}
 
@@ -43,10 +44,10 @@ One significant advantage of socket-based game server over RPC/RMI based server 
 While the later one can only pull information from server. Thus, besides the required two services (which is not used in socket-based server in practice), I also implemented the push version of the game server. Only changes (any player's location changed, chest opened, etc.) will be pushed to client, client will never call server to get the entire information of the world. This can significantly reduce network overhead (delay) thus improve user's experience.
 
 \subsubsection{RMI Server}
-Unlike socket-based server, RMI server doesn't know which client is calling, there is no session concept within. In order to distinguish different clients, each client will receive a unique token once they enter the game, and when they left the game, the token becomes invalid. During the game, most of the API calls must have the token as the first argument in order to distinguish clients.
+Unlike socket-based server, RMI server doesn't know which client is calling (multiple clients can use the same ip address). In order to distinguish different clients, each client will receive a unique token once they enter the game, and when they left the game, the token becomes invalid. During the game, most of the API calls must have the token as the first argument in order to distinguish clients.
 
 \subsection{Client}
-Once client is started, and connected to server. Then all the information of the world will be either pulled from client or pushed to client. These information will be used to render the world.
+Once client is started, it first connect to server (socket-based) or discover the game server service (RMI-based). Then all the information of the world will be either pulled from client or pushed to client. These information will be used to render the world.
 Fig.~\ref{fig:world} shows the world map from three different players' viewpoint.
 The window title bar shows the current role's location, name and total score awarded.
 Each green box in the world represents a treasure chest, each blue dot represents a player and the red dot represents the current player.
@@ -60,6 +61,18 @@ From Fig.~\ref{fig:world} we can see all the players were synced with the server
    \label{fig:world}
 \end{figure*} 
 
+\subsection{Hierarchy}
+Fig.~\ref{fig:hierarchy} shows the classes hierarchy and association.
+\begin{figure*}[htbp] %  figure placement: here, top, bottom, or page
+   \centering
+   \includegraphics[width=6in]{figs/hierarchy.png}
+   \caption{Classes hierarchy.}
+   \label{fig:hierarchy}
+\end{figure*} 
+
+\subsection{Demo}
+You can watch a demo video on Youtube: \url{https://youtu.be/WiXmO5ZJrIA} in which shows three players are walking in the virtual environment and opening chests then they left the game one by one.
+
 \section{Performance Comparison}
 \subsection{Methodology} 
 Due to the difference in implementation of two type of game servers, it's hard to compare their performance directly based on the same functionality, such as openChest, two server will return different number of results to represent different update logic, total bytes transferred also differed from each other. In order to perform a fair comparison, I implemented echo method on both servers, which returns whatever client sent to the server.
@@ -67,13 +80,14 @@ The server runs on Medusa-node1, while the test client runs on Medusa-node2. 'Sy
 
 \subsection{Results}
 I tested the average response time (over 1000 invocations) under different message sizes. 
-From Fig~\ref{fig:response_time} we can see when message size is small ($<10kb$), socket-based server performs much better than RMI server, which is up to 75\% faster. However, when message size grows, the overhead (serialization, remote references, etc.) introduced by RMI becomes negligible, the bottleneck comes from the network.
+From Fig~\ref{fig:response_time} we can see when message size is small ($<10kb$), socket-based server performs much better than RMI server, which is up to 75\% faster. However, when message size grows, the overhead (serialization, remote references, dispatcher, etc.) introduced by RMI becomes negligible, the bottleneck comes from the network.
 \begin{figure*}[htbp] %  figure placement: here, top, bottom, or page
    \centering
    \includegraphics[width=5in]{figs/response_time.pdf}
    \caption{Response time for socket and RMI under different package size.}
    \label{fig:response_time}
-\end{figure*} 
+\end{figure*}
+
 
 \subsection{Discussion}
 Compare to socket-based server implementation, the performance of RMI server is somehow acceptable. However, as mentioned above, the main limitation is lack of pushing mechanism (bi-direction communication), which makes it inefficient as a game server (clients need to pull forever for not missing any updates of the world in a multi-player game). Although we can implement each client as a RMI server as well to enable the main game server invoking each client's method, it might not be possible in some cases.

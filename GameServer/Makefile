@@ -41,13 +41,15 @@ clean:
 	rm -f $(CLASSES)
 
 backup:
-	tar -cvf \
-			cs675_p2_zhonghua.tar \
+	tar -zcvf \
+			cs675_p2_zhonghua.tar.gz \
 			--exclude='*.class' \
+			--disable-copyfile \
 			Makefile \
 			java.policy \
 			src/* \
 			README.* \
+			*.sh \
 			report/*.pdf
 
 #############################################
