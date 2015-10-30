@@ -94,4 +94,4 @@ while True:
   except socket.timeout as e:
     pass
 
-  time.sleep(2)
+  time.sleep(SLEEP_TIME)
