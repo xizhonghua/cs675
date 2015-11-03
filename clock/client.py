@@ -7,7 +7,7 @@ from util import now
 from datetime import datetime, timedelta
 
 SLEEP_TIME = 10  # sec
-TIME_OUT = 1.0   # sec
+TIME_OUT = 0.01  # sec
 MAX_ESTIMATIONS = 8
 
 UDP_IP = "127.0.0.1"
