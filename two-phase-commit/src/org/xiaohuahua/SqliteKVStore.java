@@ -26,7 +26,6 @@ public class SqliteKVStore implements KVStore {
 
       this.createTable();
 
-      System.out.println("Opened database successfully");
       return true;
     } catch (SQLException e) {
       e.printStackTrace();
@@ -37,6 +36,9 @@ public class SqliteKVStore implements KVStore {
 
   @Override
   public void put(String key, String value) {
+
+    System.out.println("PUT( " + key + ", " + value + " )");
+
     try (Connection conn = this.openConnection();
         Statement stmt = conn.createStatement()) {
       String sql = "INSERT OR REPLACE INTO [" + tableName + "](K, V) VALUES('"
@@ -49,6 +51,9 @@ public class SqliteKVStore implements KVStore {
 
   @Override
   public void del(String key) {
+
+    System.out.println("DELETE( " + key + " )");
+
     try (Connection conn = this.openConnection();
         Statement stmt = conn.createStatement()) {
       String sql = "DELETE FROM [" + tableName + "] WHERE K='" + key + "'";
@@ -60,18 +65,20 @@ public class SqliteKVStore implements KVStore {
 
   @Override
   public String get(String key) {
+    String value = null;
     try (Connection conn = this.openConnection();
         Statement stmt = conn.createStatement()) {
       String sql = "SELECT V FROM [" + tableName + "] WHERE K='" + key + "'";
       ResultSet rs = stmt.executeQuery(sql);
-      if (!rs.next())
-        return null;
-      String value = rs.getString(1);
-      return value;
+      if (rs.next())
+        value = rs.getString(1);
     } catch (SQLException e) {
       e.printStackTrace();
     }
-    return null;
+
+    System.out.println("GET( " + key + " ) = " + value);
+
+    return value;
   }
 
   private Connection openConnection() {
@@ -104,11 +111,11 @@ public class SqliteKVStore implements KVStore {
     }
 
     store.put("hello", "world");
-    System.out.println(store.get("hello"));
+    store.get("hello");
     store.put("hello", "huahua");
-    System.out.println(store.get("hello"));
+    store.get("hello");
     store.del("hello");
-    System.out.println(store.get("hello"));
+    store.get("hello");
   }
 
 }
