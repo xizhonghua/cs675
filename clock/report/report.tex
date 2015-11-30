@@ -63,6 +63,7 @@ Average clock drift rate =  $-24.316 \times 10^{-6}s/s$
 
 \subsection{Histogram of Instantaneous Clock Drift Rate}
 The shape is a mixture of gaussian distribution with one mean at $-25 \times 10^{-6} s/s$, one mean at $-42 \times 10^{-6} s/s$ and one mean at $-8 \times 10^{-6} s/s $. The middle is the main component which is the normal case with a normal distribution. The rest of two small components are due to server load and client load, context switch, thus the estimation of round trip and offset has a non-zero mean error.
+The left component is due to server load/context switch, the right component is due to client load/context switch.
 
 \begin{figure}[ht] %  figure placement: here, top, bottom, or page
    \centering
