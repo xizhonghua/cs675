@@ -2,6 +2,7 @@ package org.xiaohuahua;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
@@ -38,8 +39,8 @@ public class SqliteKVStore implements KVStore {
   public void put(String key, String value) {
     try (Connection conn = this.openConnection();
         Statement stmt = conn.createStatement()) {
-      String sql = "INSERT INTO [" + tableName + "]"
-          + "(KEY, VALUE) VALUES (" + key + "," + value + ")";
+      String sql = "INSERT OR REPLACE INTO [" + tableName + "](K, V) VALUES('"
+          + key + "','" + value + "')";
       stmt.executeUpdate(sql);
     } catch (SQLException e) {
       e.printStackTrace();
@@ -48,13 +49,28 @@ public class SqliteKVStore implements KVStore {
 
   @Override
   public void del(String key) {
-    // TODO Auto-generated method stub
-
+    try (Connection conn = this.openConnection();
+        Statement stmt = conn.createStatement()) {
+      String sql = "DELETE FROM [" + tableName + "] WHERE K='" + key + "'";
+      stmt.executeUpdate(sql);
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
   }
 
   @Override
   public String get(String key) {
-    // TODO Auto-generated method stub
+    try (Connection conn = this.openConnection();
+        Statement stmt = conn.createStatement()) {
+      String sql = "SELECT V FROM [" + tableName + "] WHERE K='" + key + "'";
+      ResultSet rs = stmt.executeQuery(sql);
+      if (!rs.next())
+        return null;
+      String value = rs.getString(1);
+      return value;
+    } catch (SQLException e) {
+      e.printStackTrace();
+    }
     return null;
   }
 
@@ -74,7 +90,7 @@ public class SqliteKVStore implements KVStore {
     try (Connection conn = this.openConnection();
         Statement stmt = conn.createStatement()) {
       String sql = "CREATE TABLE IF NOT EXISTS [" + tableName + "] ("
-          + "KEY TEXT PRIMARY KEY NOT NULL, VALUE TEXT NOT NULL)";
+          + "K TEXT PRIMARY KEY NOT NULL, V TEXT NOT NULL)";
       stmt.executeUpdate(sql);
     } catch (SQLException e) {
       e.printStackTrace();
