@@ -54,3 +54,6 @@ backup:
 
 run_db_test: ${CLASSES}
 	${RUN_CMD} org.xiaohuahua.SqliteKVStore
+
+run_client_test: ${CLASSES}
+	${RUN_CMD} org.xiaohuahua.Client

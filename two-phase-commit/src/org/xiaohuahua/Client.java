@@ -2,12 +2,23 @@ package org.xiaohuahua;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Client {
+
+  static Map<String, String> usages = new HashMap<String, String>();
+
+  static {
+    usages.put("put", "key value");
+    usages.put("del", "key");
+    usages.put("help", "");
+    usages.put("script", "filename");
+  }
 
   private RemoteMaster master;
 
@@ -40,8 +51,30 @@ public class Client {
     }
   }
 
+  private void printUsage(String key) {
+    if (key == null) {
+      for (String k : usages.keySet()) {
+        System.out.println("Usage: " + k + " " + usages.get(k));
+      }
+    } else {
+      System.out.println("Usage: " + key + " " + usages.get(key));
+    }
+  }
+
   private void runCmd(String cmd) {
     String[] ops = cmd.split(" ");
+
+    int requiredArgs = 0;
+    if (usages.containsKey(ops[0])) {
+      String help = usages.get(ops[0]);
+      requiredArgs = help.equals("") ? 0 : help.split(" ").length;
+
+      if (ops.length != requiredArgs + 1) {
+        printUsage(ops[0]);
+        return;
+      }
+    }
+
     switch (ops[0]) {
     case "put":
       this.put(ops[1], ops[2]);
@@ -54,6 +87,9 @@ public class Client {
       break;
     case "script":
       this.runScript(ops[1]);
+      break;
+    case "help":
+      this.printUsage(null);
       break;
     default:
       System.out.println("!Unkown command: " + ops[0]);
@@ -99,7 +135,22 @@ public class Client {
   }
 
   public static void main(String[] args) {
-    RemoteMaster master = new Master(); // TODO(zxi) get master
+
+    if (args.length < 1) {
+      System.out
+          .println("Usage: java " + Client.class.getName() + "[master_server]");
+    }
+
+    String serverName = args.length > 1 ? args[1] : "localhost";
+    String fullServiceName = "rmi://" + serverName + "/master";
+    RemoteMaster master = null;
+
+    try {
+      master = (RemoteMaster) Naming.lookup(fullServiceName);
+    } catch (Exception e) {
+      System.out.println("Failed to find Master service at " + fullServiceName);
+      e.printStackTrace();
+    }
 
     Client client = new Client(master);
     client.run();
