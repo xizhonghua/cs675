@@ -28,6 +28,10 @@ RUN_RMI_SERVER = ${RUN_CMD} $(RMI_SERVER_CLASS)
 RUN_RMI_CLIENT = ${RUN_CMD} $(RMI_CLIENT_CLASS)
 RUN_RMI_TEST_CLIENT = ${RUN_CMD} $(RMI_TEST_CLIENT_CLASS)
 
+RUN_REPLICA = ${RUN_CMD} org.xiaohuahua.Replica
+
+RUN_REPLICA_LOCAL_MASTER = ${RUN_REPLICA} localhost
+
 .SUFFIXES: .java .class
 
 .java.class:
@@ -57,3 +61,12 @@ run_db_test: ${CLASSES}
 
 run_client_test: ${CLASSES}
 	${RUN_CMD} org.xiaohuahua.Client
+
+start_master: ${CLASSES}
+	${RUN_CMD} org.xiaohuahua.Master
+
+start_replica1_local: ${CLASSES}
+	${RUN_REPLICA_LOCAL_MASTER} rep1
+
+start_replica2_local: ${CLASSES}
+	${RUN_REPLICA_LOCAL_MASTER} rep2
