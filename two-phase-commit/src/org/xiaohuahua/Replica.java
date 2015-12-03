@@ -56,7 +56,7 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
       RemoteReplica replica = new Replica(replicaId, master);
 
-      Naming.bind(replicaServiceName, replica);
+      Naming.rebind(replicaServiceName, replica);
 
       System.out.println("Replica binds to " + replicaServiceName);
 

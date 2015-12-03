@@ -40,6 +40,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
   public void registerReplica(String replicaId, RemoteReplica replica)
       throws RemoteException {
     this.replicas.put(replicaId, replica);
+    System.out.println("replica " + replicaId + " registered!");
   }
 
   public static void main(String[] args) {
@@ -48,7 +49,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
       RemoteMaster master = new Master();
 
-      Naming.bind(Config.MASTER_SERVICE_NAME, master);
+      Naming.rebind(Config.MASTER_SERVICE_NAME, master);
 
       System.out.println("Master binds to " + Config.MASTER_SERVICE_NAME);
 
