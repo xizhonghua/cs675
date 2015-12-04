@@ -10,11 +10,12 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
    * 
    */
   private static final long serialVersionUID = 1L;
-  private RemoteMaster master;
+  private RemoteCoordinator master;
   private String replicaId;
   private KVStore store;
 
-  public Replica(String replicaId, RemoteMaster master) throws RemoteException {
+  public Replica(String replicaId, RemoteCoordinator master)
+      throws RemoteException {
     this.replicaId = replicaId;
     this.master = master;
 
@@ -47,6 +48,12 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
   public void put(String key, String value) throws RemoteException {
     this.store.put(key, value);
   }
+  
+  @Override
+  public Message handleMessage(Message request) throws RemoteException
+  {
+    return null;
+  }
 
   public static void main(String[] args) {
     if (args.length < 2) {
@@ -64,7 +71,8 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
           + Config.MASTER_SERVICE_NAME;
       String replicaServiceName = Config.REPLICA_SERVICE_NAME + "_" + replicaId;
 
-      RemoteMaster master = (RemoteMaster) Naming.lookup(masterServiceName);
+      RemoteCoordinator master = (RemoteCoordinator) Naming
+          .lookup(masterServiceName);
 
       System.out.println("Master found at " + masterServiceName);
 

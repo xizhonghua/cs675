@@ -9,5 +9,7 @@ public interface RemoteReplica extends Remote {
   public void del(String key) throws RemoteException;
 
   public void put(String key, String value) throws RemoteException;
+  
+  public Message handleMessage(Message request) throws RemoteException;
 
 }

@@ -97,15 +97,20 @@ public class Client {
     }
   }
 
-  public void runScript(String filename) {
+  private void runScript(String filename) {
     try (BufferedReader br = new BufferedReader(
         new InputStreamReader(new FileInputStream(filename)))) {
       while (true) {
         String line = br.readLine();
         if (line == null)
           break;
-        System.out.println(">>> " + line);
-        this.runCmd(line);
+        // Run multiple commands without delay
+        String[] cmds = line.split(",");
+        for (String cmd : cmds) {
+          System.out.println(">>> " + cmd);
+          this.runCmd(line);
+        }
+        // delay for next command
         Thread.sleep(2000);
       }
     } catch (IOException | InterruptedException e) {
