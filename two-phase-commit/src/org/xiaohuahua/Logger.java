@@ -1,5 +1,8 @@
 package org.xiaohuahua;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
@@ -9,22 +12,27 @@ public class Logger {
   public static final String GLOBAL_ABORT = "GLOBAL_ABORT";
   public static final String GLOBAL_COMMIT = "GLOBAL_COMMIT";
 
-  private FileWriter fw;
+  private String path;
 
   public Logger(String path) {
-    try {
-      this.fw = new FileWriter(path, true);
+    this.path = path;
+  }
+
+  public void log(String log) {
+    try (FileWriter fw = new FileWriter(path, true)) {
+      fw.write(log + "\n");
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
-
-  public void log(String log) {
+  
+  public String getLatestState() {
     try {
-      fw.write(log + "\n");
-      fw.flush();
-    } catch (IOException e) {
+      BufferedReader br = new BufferedReader(new FileReader(path));
+    } catch (FileNotFoundException e) {
+      // TODO Auto-generated catch block
       e.printStackTrace();
     }
+    return null;
   }
 }

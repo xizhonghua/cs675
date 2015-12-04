@@ -13,11 +13,14 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
   private RemoteCoordinator master;
   private String replicaId;
   private KVStore store;
+  private Logger logger;
 
   public Replica(String replicaId, RemoteCoordinator master)
       throws RemoteException {
+
     this.replicaId = replicaId;
     this.master = master;
+    this.logger = new Logger(replicaId + ".log");
 
     String db_path = "store_" + this.replicaId + ".db";
 
@@ -48,11 +51,23 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
   public void put(String key, String value) throws RemoteException {
     this.store.put(key, value);
   }
-  
+
   @Override
-  public Message handleMessage(Message request) throws RemoteException
-  {
-    return null;
+  public Message handleMessage(Message request) throws RemoteException {
+    Message response = null;
+    switch (request.getMessageType()) {
+    case VOTE_REQUEST:
+      // always vote commit
+      response = new Message(MessageType.VOTE_COMMIT);
+      break;
+    case GLOBAL_ABORT:
+      break;
+    default:
+      // do nothing
+      break;
+    }
+
+    return response;
   }
 
   public static void main(String[] args) {
