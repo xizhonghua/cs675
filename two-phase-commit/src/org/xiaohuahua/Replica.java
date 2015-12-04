@@ -33,6 +33,21 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
     this.master.registerReplica(replicaId, this);
   }
 
+  @Override
+  public String get(String key) throws RemoteException {
+    return this.store.get(key);
+  }
+
+  @Override
+  public void del(String key) throws RemoteException {
+    this.store.del(key);
+  }
+
+  @Override
+  public void put(String key, String value) throws RemoteException {
+    this.store.put(key, value);
+  }
+
   public static void main(String[] args) {
     if (args.length < 2) {
       System.out.println("Usage: java " + Replica.class.getName()
@@ -41,7 +56,6 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
     String masterAddress = args[0];
     String replicaId = args[1];
-    
 
     try {
       System.setSecurityManager(new SecurityManager());
@@ -65,4 +79,5 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
     }
 
   }
+
 }

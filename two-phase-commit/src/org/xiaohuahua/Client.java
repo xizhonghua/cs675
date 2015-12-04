@@ -141,8 +141,9 @@ public class Client {
           .println("Usage: java " + Client.class.getName() + "[master_server]");
     }
 
-    String serverName = args.length > 1 ? args[1] : "localhost";
-    String fullServiceName = "rmi://" + serverName + "/master";
+    String serverAddress = args.length > 1 ? args[1] : "localhost";
+    String fullServiceName = "rmi://" + serverAddress + "/"
+        + Config.MASTER_SERVICE_NAME;
     RemoteMaster master = null;
 
     try {

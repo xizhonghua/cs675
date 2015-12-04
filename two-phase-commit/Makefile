@@ -32,6 +32,9 @@ RUN_REPLICA = ${RUN_CMD} org.xiaohuahua.Replica
 
 RUN_REPLICA_LOCAL_MASTER = ${RUN_REPLICA} localhost
 
+RUN_CLIENT_BASE = ${RUN_CMD} org.xiaohuahua.Client
+RUN_CLIENT_LOCAL = ${RUN_CLIENT_BASE} localhost
+
 .SUFFIXES: .java .class
 
 .java.class:
@@ -64,6 +67,9 @@ run_client_test: ${CLASSES}
 
 start_master: ${CLASSES}
 	${RUN_CMD} org.xiaohuahua.Master
+
+start_client_local: ${CLASSES}
+	${RUN_CLIENT_LOCAL}
 
 start_replica1_local: ${CLASSES}
 	${RUN_REPLICA_LOCAL_MASTER} rep1
