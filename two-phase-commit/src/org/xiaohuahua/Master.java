@@ -5,7 +5,6 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
    */
   private static final long serialVersionUID = 1L;
   private static final Random random = new Random(new Date().getTime());
-  
+
   private Set<String> requests;
   private Logger logger;
   private Config config;
@@ -60,8 +59,10 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
     List<Message> voteRsps = this.broadcast(voteRequest);
 
-    int commitVotes = (int) voteRsps.stream()
-        .filter(m -> m.getType() == MessageType.VOTE_COMMIT).count();
+    int commitVotes = 0;
+    for (Message m : voteRsps)
+      if (m.getType() == MessageType.VOTE_COMMIT)
+        commitVotes++;
 
     Message command = null;
 
