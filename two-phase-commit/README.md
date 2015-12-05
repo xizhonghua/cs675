@@ -7,19 +7,28 @@
 `$ make`
 
 ### Run at Local
+
 * Start RMI registry
-`$ ./stop_registry.sh`
-`$ ./start_registry.sh`
+```
+$ ./stop_registry.sh
+$ ./start_registry.sh
+```
 
 * Start Master
-`$ make start_master_local`
+```
+$ make start_master_local
+```
 
 * Start Replicas
-`make start_replica0_local`
-`make start_replica1_local`
+```
+make start_replica0_local
+make start_replica1_local
+```
 
 * Start client
-`make start_client_local`
+```
+make start_client_local
+```
 
 ### Run at Medusa Cluster
 
