@@ -18,7 +18,7 @@ RUN_CMD = java -Djava.security.policy=java.policy \
 		 -classpath ${CP}
 
 LOCAL_ARGS  = --master localhost --replicas localhost,localhost
-MEDUSA_ARGS = --master medusa-node1.vsnet.gmu.edu --replicas medusa-node2.vsnet.gmu.edu,medusa-node4.vsnet.gmu.edu
+MEDUSA_ARGS = --master medusa-node1.vsnet.gmu.edu --replicas medusa-node1.vsnet.gmu.edu,medusa-node2.vsnet.gmu.edu
 
 
 RUN_MASTER_BASE = ${RUN_CMD} org.xiaohuahua.Master
@@ -61,7 +61,7 @@ run_db_test: ${CLASSES}
 start_master_local: ${CLASSES}
 	${RUN_MASTER_LOCAL}
 
-start_master_medusa: ${CLASSES}
+start_master: ${CLASSES}
 	${RUN_MASTER_BASE} ${MEDUSA_ARGS}
 
 start_client_local: ${CLASSES}
@@ -70,13 +70,13 @@ start_client_local: ${CLASSES}
 start_replica0_local: ${CLASSES}
 	${RUN_REPLICA_LOCAL} --repId 0
 
-start_replica0_medusa: ${CLASSES}
+start_replica0: ${CLASSES}
 	${RUN_REPLICA_BASE} ${MEDUSA_ARGS} --repId 0
 
 start_replica1_local: ${CLASSES}
 	${RUN_REPLICA_LOCAL} --repId 1
 
-start_replica1_medusa: ${CLASSES}
+start_replica1: ${CLASSES}
 	${RUN_REPLICA_BASE} ${MEDUSA_ARGS} --repId 1
 
 
