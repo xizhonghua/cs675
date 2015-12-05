@@ -62,10 +62,12 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
     Transaction t = request.getTranscation();
 
-    Message response = new Message(this.getName());
+    //TODO(zxi) update message types
+    Message response = new Message("Replica", this.config.getReplicaId(),
+        MessageType.ACK);
     response.setTransaction(t);
 
-    System.out.println("Message: " + request);
+    System.out.println("Request: " + request);
 
     switch (request.getType()) {
 
@@ -103,9 +105,11 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
     try {
       // delay response
-      Thread.sleep(2000);
+      Thread.sleep(1000);
     } catch (InterruptedException e) {
     }
+
+    System.out.println("Respone: " + response);
 
     return response;
   }
@@ -126,8 +130,8 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
       Naming.rebind(config.getReplicaName(config.getReplicaId()), replica);
 
-      System.out.println("Replica binds to "
-          + config.getReplicaName(config.getReplicaId()));
+      System.out.println(
+          "Replica binds to " + config.getReplicaName(config.getReplicaId()));
 
     } catch (Exception e) {
       e.printStackTrace();

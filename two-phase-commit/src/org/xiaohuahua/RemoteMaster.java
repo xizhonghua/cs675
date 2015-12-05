@@ -11,8 +11,4 @@ public interface RemoteMaster extends Remote {
   public void put(String key, String value) throws RemoteException;
 
   public void del(String key) throws RemoteException;
-  
-//Two-Phase commit methods
- public void registerReplica(String replicaId, RemoteReplica replica)
-     throws RemoteException;
 }

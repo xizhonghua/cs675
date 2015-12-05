@@ -21,14 +21,12 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
    */
   private static final long serialVersionUID = 1L;
   private static final Random random = new Random(new Date().getTime());
-
-  private Map<String, RemoteReplica> replicas;
+  
   private Set<String> requests;
   private Logger logger;
   private Config config;
 
   public Master(Config config) throws RemoteException {
-    this.replicas = new HashMap<>();
     this.logger = new Logger("master.log");
     this.requests = new HashSet<>();
     this.config = config;
@@ -57,7 +55,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
     this.logger.log(Event.START_2PC, t);
 
-    Message voteRequest = new Message("Master", MessageType.VOTE_REQUEST);
+    Message voteRequest = new Message("Master", -1, MessageType.VOTE_REQUEST);
     voteRequest.setTransaction(t);
 
     List<Message> voteRsps = this.broadcast(voteRequest);
@@ -68,13 +66,13 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     Message command = null;
 
     // All replicas vote commit
-    if (commitVotes == this.replicas.values().size() && voteCommit) {
+    if (commitVotes == Config.NUM_OF_REPLICAS && voteCommit) {
       this.logger.log(Event.GLOBAL_COMMIT, t);
-      command = new Message("Master", MessageType.GLOBAL_COMMIT);
+      command = new Message("Master", -1, MessageType.GLOBAL_COMMIT);
     } else {
       // timeout or abort
       this.logger.log(Event.GLOBAL_ABORT, t);
-      command = new Message("Master", MessageType.GLOBAL_ABORT);
+      command = new Message("Master", -1, MessageType.GLOBAL_ABORT);
     }
 
     command.setTransaction(t);
@@ -105,13 +103,6 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     Transaction t = new Transaction(TransactionType.DEL, key, null);
 
     this.twoPhaseCommit(t);
-  }
-
-  @Override
-  public void registerReplica(String replicaId, RemoteReplica replica)
-      throws RemoteException {
-    this.replicas.put(replicaId, replica);
-    System.out.println("replica " + replicaId + " registered!");
   }
 
   // helper functions
@@ -151,6 +142,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
       try {
         Message response = rep.handleMessage(request);
         replies.add(response);
+        System.out.println("Response" + i + ": " + response);
       } catch (RemoteException e) {
         // TODO(zxi) handle timeout,
         e.printStackTrace();

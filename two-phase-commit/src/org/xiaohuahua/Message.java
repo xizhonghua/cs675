@@ -11,15 +11,13 @@ public class Message implements Serializable {
 
   private MessageType type;
   private Transaction transaction;
-  private String sender;
+  private String senderType;
   private String decision;
-  
-  public Message(String sender) {
-    this(sender, MessageType.ACK);
-  }
+  private int senderId;
 
-  public Message(String sender, MessageType type) {
-    this.sender = sender;
+  public Message(String senderType, int senderId, MessageType type) {
+    this.senderType = senderType;
+    this.senderId = senderId;
     this.type = type;
   }
 
@@ -37,8 +35,8 @@ public class Message implements Serializable {
   public MessageType getType() {
     return this.type;
   }
-  
-  public void setType(MessageType type){
+
+  public void setType(MessageType type) {
     this.type = type;
   }
 
@@ -49,15 +47,19 @@ public class Message implements Serializable {
   public Transaction getTranscation() {
     return this.transaction;
   }
-  
-  public String getSender() {
-    return this.sender;
+
+  public String getSenderType() {
+    return this.senderType;
   }
-  
+
+  public int getSenderId() {
+    return this.senderId;
+  }
+
   public void setDecision(String decision) {
     this.decision = decision;
   }
-  
+
   public String getDecision() {
     return this.decision;
   }
