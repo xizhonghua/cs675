@@ -8,7 +8,9 @@ import java.io.IOException;
 public class Logger {
 
   public static final String INIT = "INIT";
+  public static final String READY = "READY";
   public static final String START_2PC = "START_2PC";
+  public static final String VOTE_COMMIT = "VOTE_COMMIT";
   public static final String GLOBAL_ABORT = "GLOBAL_ABORT";
   public static final String GLOBAL_COMMIT = "GLOBAL_COMMIT";
 
@@ -18,21 +20,28 @@ public class Logger {
     this.path = path;
   }
 
-  public void log(String log) {
+  // log the state for a given transaction
+  public synchronized void log(String state, Transaction t) {
+
     try (FileWriter fw = new FileWriter(path, true)) {
-      fw.write(log + "\n");
+      fw.write(state + "," + t.toJSON() + "\n");
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
-  public String getLatestState() {
+  // get the latest state for a given transaction
+  public synchronized String getLatestState(Transaction t) {
     String state = Logger.GLOBAL_ABORT;
 
     try (BufferedReader br = new BufferedReader(new FileReader(path))) {
       while (true) {
-        String line = br.readLine();
-        switch (line) {
+        String[] items = br.readLine().split(",");
+        String curState = items[0];
+        Transaction curT = Transaction.fromJSON(items[1]);
+        if (curT.getId() != t.getId())
+          continue;
+        switch (curState) {
         case GLOBAL_ABORT:
           state = GLOBAL_ABORT;
           break;

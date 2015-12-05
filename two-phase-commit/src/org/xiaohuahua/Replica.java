@@ -13,7 +13,7 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
   private RemoteMaster master;
   private String replicaId;
   private KVStore store;
-  private Logger logger;
+  private Logger logger;  
 
   public Replica(String replicaId, RemoteMaster master) throws RemoteException {
 
@@ -71,18 +71,33 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
     System.out.println("Message: " + request);
 
     switch (request.getType()) {
+
+    case DECISION_REQUEST:
+      response.setType(MessageType.DECISION_RESPONSE);
+
+      String state = this.logger.getLatestState(t);
+      if (state.equals(Logger.GLOBAL_COMMIT))
+        response.setDecision(Logger.GLOBAL_COMMIT);
+      else
+        response.setDecision(Logger.GLOBAL_ABORT);
+      break;
+
     case VOTE_REQUEST:
       // always vote commit
 
+      this.logger.log(Logger.VOTE_COMMIT, t);
+      // send to master
       response.setType(MessageType.VOTE_COMMIT);
       break;
     case GLOBAL_COMMIT:
+      this.logger.log(Logger.GLOBAL_COMMIT, t);
       // do the commit
       this.commitTranscation(t);
 
       break;
     case GLOBAL_ABORT:
       // do nothing
+      this.logger.log(Logger.GLOBAL_ABORT, t);
       break;
     default:
       // do nothing

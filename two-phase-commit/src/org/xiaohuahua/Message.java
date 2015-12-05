@@ -12,6 +12,7 @@ public class Message implements Serializable {
   private MessageType type;
   private Transaction transaction;
   private String sender;
+  private String decision;
   
   public Message(String sender) {
     this(sender, MessageType.ACK);
@@ -52,11 +53,19 @@ public class Message implements Serializable {
   public String getSender() {
     return this.sender;
   }
+  
+  public void setDecision(String decision) {
+    this.decision = decision;
+  }
+  
+  public String getDecision() {
+    return this.decision;
+  }
 
   @Override
   public String toString() {
-    return String.format("{Sender = %s, Type = %s, Transaction = %s}", this.sender, this.type,
-        this.transaction);
+    return String.format("{Sender = %s, Type = %s, T = %s, D = %s}", this.sender, this.type,
+        this.transaction, this.decision);
   }
 
 }

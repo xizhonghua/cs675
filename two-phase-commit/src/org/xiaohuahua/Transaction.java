@@ -50,7 +50,15 @@ public class Transaction implements Serializable {
 
   @Override
   public String toString() {
-    return String.format("{Id = %d Type = %s Key = %s Value = %s}", this.Id, this.type, this.key,
-        this.value);
+    return String.format("{Id = %d Type = %s Key = %s Value = %s}", this.Id,
+        this.type, this.key, this.value);
+  }
+
+  public String toJSON() {
+    return Util.toJSON(this);
+  }
+
+  public static Transaction fromJSON(String json) {
+    return Util.fromJSON(json, Transaction.class);
   }
 }

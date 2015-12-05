@@ -7,17 +7,15 @@ SOCKET_TEST_CLIENT_CLASS = org.xiaohuahua.game.socket.TestClient
 RMI_SERVER_CLASS = org.xiaohuahua.game.rmi.Server
 RMI_CLIENT_CLASS = org.xiaohuahua.game.rmi.Client
 RMI_TEST_CLIENT_CLASS = org.xiaohuahua.game.rmi.TestClient
-# local server address
-LOCAL_SERVER = localhost
-# server address
-SERVER = medusa-node1.vsnet.gmu.edu
+
+CP = $(SRC):./sqlite-jdbc-3.8.11.2.jar:./gson-2.5.jar
 
 JC = javac
-JFLAGS = -classpath $(SRC)
+JFLAGS = -classpath ${CP}
 
 RUN_CMD = java -Djava.security.policy=java.policy \
 		 -Djava.rmi.server.codebase=file:$(SRC) \
-		 -classpath $(SRC):./sqlite-jdbc-3.8.11.2.jar
+		 -classpath ${CP}
 
 RUN_SOCKET_SERVER = ${RUN_CMD} $(SOCKET_SERVER_CLASS)
 RUN_SOCKET_CLIENT = ${RUN_CMD} ${SOCKET_CLIENT_CLASS}
@@ -76,3 +74,9 @@ start_replica1_local: ${CLASSES}
 
 start_replica2_local: ${CLASSES}
 	${RUN_REPLICA_LOCAL_MASTER} rep2
+
+clear_log:
+	rm *.log
+
+clear_all:
+	rm *.log *.db

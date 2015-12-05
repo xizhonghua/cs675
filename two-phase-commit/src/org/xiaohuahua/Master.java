@@ -53,7 +53,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
       }
     }
 
-    this.logger.log(Logger.START_2PC);
+    this.logger.log(Logger.START_2PC, t);
 
     Message voteRequest = new Message("Master", MessageType.VOTE_REQUEST);
     voteRequest.setTransaction(t);
@@ -67,11 +67,11 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
     // All replicas vote commit
     if (commitVotes == this.replicas.values().size() && voteCommit) {
-      this.logger.log(Logger.GLOBAL_COMMIT);
+      this.logger.log(Logger.GLOBAL_COMMIT, t);
       command = new Message("Master", MessageType.GLOBAL_COMMIT);
     } else {
       // timeout or abort
-      this.logger.log(Logger.GLOBAL_ABORT);
+      this.logger.log(Logger.GLOBAL_ABORT, t);
       command = new Message("Master", MessageType.GLOBAL_ABORT);
     }
 
