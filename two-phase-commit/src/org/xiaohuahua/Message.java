@@ -39,4 +39,10 @@ public class Message implements Serializable {
     return this.transaction;
   }
 
+  @Override
+  public String toString() {
+    return String.format("{Type = %s, Transaction = %s}", this.messageType,
+        this.transaction);
+  }
+
 }

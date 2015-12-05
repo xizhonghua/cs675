@@ -31,21 +31,26 @@ public class Transaction implements Serializable {
     this.key = key;
     this.value = value;
   }
-  
-  
+
   public TransactionType getType() {
     return this.type;
   }
-  
+
   public long getId() {
     return this.Id;
   }
-  
+
   public String getKey() {
     return this.key;
   }
-  
+
   public String getValue() {
     return this.value;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("{Id = %d Type = %s Key = %s Value = %s}", this.Id, this.type, this.key,
+        this.value);
   }
 }

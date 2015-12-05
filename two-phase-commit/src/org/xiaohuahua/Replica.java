@@ -10,13 +10,12 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
    * 
    */
   private static final long serialVersionUID = 1L;
-  private RemoteCoordinator master;
+  private RemoteMaster master;
   private String replicaId;
   private KVStore store;
   private Logger logger;
 
-  public Replica(String replicaId, RemoteCoordinator master)
-      throws RemoteException {
+  public Replica(String replicaId, RemoteMaster master) throws RemoteException {
 
     this.replicaId = replicaId;
     this.master = master;
@@ -42,25 +41,50 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
     return this.store.get(key);
   }
 
-  @Override
-  public void del(String key) throws RemoteException {
+  private void del(String key) {
     this.store.del(key);
   }
 
-  @Override
-  public void put(String key, String value) throws RemoteException {
+  private void put(String key, String value) {
     this.store.put(key, value);
+  }
+
+  private void commitTranscation(Transaction t) {
+    switch (t.getType()) {
+    case DEL:
+      this.del(t.getKey());
+      break;
+    case PUT:
+      this.put(t.getKey(), t.getValue());
+      break;
+    }
   }
 
   @Override
   public Message handleMessage(Message request) throws RemoteException {
+
     Message response = null;
+    Transaction t = request.getTranscation();
+
+    System.out.println("Message: " + request);
+
     switch (request.getMessageType()) {
     case VOTE_REQUEST:
       // always vote commit
+
       response = new Message(MessageType.VOTE_COMMIT);
       break;
+    case GLOBAL_COMMIT:
+      // do the commit
+      this.commitTranscation(t);
+      response = new Message(MessageType.ACK);
+      response.setTransaction(t);
+      break;
     case GLOBAL_ABORT:
+      System.out.println(String.format("[%s] %s", MessageType.VOTE_REQUEST,
+          request.getTranscation()));
+      response = new Message(MessageType.ACK);
+      response.setTransaction(t);
       break;
     default:
       // do nothing
@@ -86,8 +110,7 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
           + Config.MASTER_SERVICE_NAME;
       String replicaServiceName = Config.REPLICA_SERVICE_NAME + "_" + replicaId;
 
-      RemoteCoordinator master = (RemoteCoordinator) Naming
-          .lookup(masterServiceName);
+      RemoteMaster master = (RemoteMaster) Naming.lookup(masterServiceName);
 
       System.out.println("Master found at " + masterServiceName);
 

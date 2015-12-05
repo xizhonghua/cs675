@@ -14,8 +14,7 @@ import java.util.Set;
 
 import org.xiaohuahua.Transaction.TransactionType;
 
-public class Master extends UnicastRemoteObject
-    implements RemoteMaster, RemoteCoordinator {
+public class Master extends UnicastRemoteObject implements RemoteMaster {
 
   /**
    * 
@@ -88,7 +87,6 @@ public class Master extends UnicastRemoteObject
 
   @Override
   public void put(String key, String value) throws RemoteException {
-    // this.getRandomReplica().put(key, value);
 
     System.out.println("put(" + key + "," + value + ")");
 
@@ -99,9 +97,12 @@ public class Master extends UnicastRemoteObject
 
   @Override
   public void del(String key) throws RemoteException {
-    this.getRandomReplica().del(key);
 
     System.out.println("del(" + key + ")");
+
+    Transaction t = new Transaction(TransactionType.DEL, key, null);
+
+    this.twoPhaseCommit(t);
   }
 
   @Override
@@ -125,6 +126,9 @@ public class Master extends UnicastRemoteObject
 
   // broadcast a message to all replicas and receive replies
   private List<Message> broadcast(Message request) {
+
+    System.out.println("Broadcasting message: " + request);
+
     List<Message> replies = new ArrayList<>();
     for (RemoteReplica rep : this.replicas.values()) {
       try {

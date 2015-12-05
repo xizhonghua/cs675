@@ -1,13 +1,13 @@
 package org.xiaohuahua;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
 public class Logger {
 
+  public static final String INIT = "INIT";
   public static final String START_2PC = "START_2PC";
   public static final String GLOBAL_ABORT = "GLOBAL_ABORT";
   public static final String GLOBAL_COMMIT = "GLOBAL_COMMIT";
@@ -25,14 +25,25 @@ public class Logger {
       e.printStackTrace();
     }
   }
-  
+
   public String getLatestState() {
-    try {
-      BufferedReader br = new BufferedReader(new FileReader(path));
-    } catch (FileNotFoundException e) {
-      // TODO Auto-generated catch block
+    String state = Logger.GLOBAL_ABORT;
+
+    try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+      while (true) {
+        String line = br.readLine();
+        switch (line) {
+        case GLOBAL_ABORT:
+          state = GLOBAL_ABORT;
+          break;
+        case GLOBAL_COMMIT:
+          state = GLOBAL_COMMIT;
+          break;
+        }
+      }
+    } catch (IOException e) {
       e.printStackTrace();
     }
-    return null;
+    return state;
   }
 }
