@@ -22,14 +22,16 @@
 `make start_client_local`
 
 ### Run at Medusa Cluster
-Default setting: (can be configured in Makefile) 
+
+#### Default setting: (can be configured in Makefile) 
 `MEDUSA_ARGS = --master medusa-node1.vsnet.gmu.edu --replicas medusa-node1.vsnet.gmu.edu,medusa-node2.vsnet.gmu.edu`
 
 * Master: node1
 * Replica0: node1
 * Replica1: node2
 * Client: any node
----
+
+#### Commands
 
 * Start RMI registry 
 `$ ./stop_registry.sh`
