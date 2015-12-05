@@ -21,13 +21,13 @@ $ make start_master_local
 
 * Start Replicas
 ```
-make start_replica0_local
-make start_replica1_local
+$ make start_replica0_local
+$ make start_replica1_local
 ```
 
 * Start client
 ```
-make start_client_local
+$ make start_client_local
 ```
 
 ### Run at Medusa Cluster
@@ -43,15 +43,23 @@ make start_client_local
 #### Commands
 
 * Start RMI registry 
-`$ ./stop_registry.sh`
-`$ ./start_registry.sh`
+```
+$ ./stop_registry.sh
+$ ./start_registry.sh
+```
 
 * Start Master
-On node1 `$ make start_master`
+```
+node1 $ make start_master
+```
 
 * Start Replicas 
-On node1 `$ make start_replica0`
-On node2 `$ make start_replica1`
+```
+node1 $ make start_replica0
+node2 $ make start_replica1
+```
 
 * Start client
-On any node `$ make start_client`
+```
+$ make start_client
+```
