@@ -67,6 +67,10 @@ start_master: ${CLASSES}
 start_client_local: ${CLASSES}
 	${RUN_CLIENT_LOCAL}
 
+start_client: ${CLASSES}
+	${RUN_CLIENT_BASE} ${MEDUSA_ARGS}
+
+
 start_replica0_local: ${CLASSES}
 	${RUN_REPLICA_LOCAL} --repId 0
 
