@@ -1,12 +1,6 @@
 SRC = ./src
 SRCS = $(shell find $(SRC) -name *.java)
 CLASSES = $(SRCS:.java=.class)
-SOCKET_SERVER_CLASS = org.xiaohuahua.game.socket.Server
-SOCKET_CLIENT_CLASS = org.xiaohuahua.game.socket.Client
-SOCKET_TEST_CLIENT_CLASS = org.xiaohuahua.game.socket.TestClient
-RMI_SERVER_CLASS = org.xiaohuahua.game.rmi.Server
-RMI_CLIENT_CLASS = org.xiaohuahua.game.rmi.Client
-RMI_TEST_CLIENT_CLASS = org.xiaohuahua.game.rmi.TestClient
 
 CP = $(SRC):./sqlite-jdbc-3.8.11.2.jar:./gson-2.5.jar
 
@@ -50,6 +44,7 @@ backup:
 			--disable-copyfile \
 			Makefile \
 			java.policy \
+			*.jar \
 			src/* \
 			README.* \
 			*.sh \
