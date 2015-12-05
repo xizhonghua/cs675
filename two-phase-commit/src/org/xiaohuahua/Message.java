@@ -9,11 +9,17 @@ public class Message implements Serializable {
    */
   private static final long serialVersionUID = 1L;
 
-  private MessageType messageType;
+  private MessageType type;
   private Transaction transaction;
+  private String sender;
+  
+  public Message(String sender) {
+    this(sender, MessageType.ACK);
+  }
 
-  public Message(MessageType messageType) {
-    this.messageType = messageType;
+  public Message(String sender, MessageType type) {
+    this.sender = sender;
+    this.type = type;
   }
 
   @Override
@@ -27,8 +33,12 @@ public class Message implements Serializable {
     return false;
   }
 
-  public MessageType getMessageType() {
-    return this.messageType;
+  public MessageType getType() {
+    return this.type;
+  }
+  
+  public void setType(MessageType type){
+    this.type = type;
   }
 
   public void setTransaction(Transaction t) {
@@ -38,10 +48,14 @@ public class Message implements Serializable {
   public Transaction getTranscation() {
     return this.transaction;
   }
+  
+  public String getSender() {
+    return this.sender;
+  }
 
   @Override
   public String toString() {
-    return String.format("{Type = %s, Transaction = %s}", this.messageType,
+    return String.format("{Sender = %s, Type = %s, Transaction = %s}", this.sender, this.type,
         this.transaction);
   }
 

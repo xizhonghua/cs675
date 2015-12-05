@@ -55,24 +55,24 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
     this.logger.log(Logger.START_2PC);
 
-    Message voteRequest = new Message(MessageType.VOTE_REQUEST);
+    Message voteRequest = new Message("Master", MessageType.VOTE_REQUEST);
     voteRequest.setTransaction(t);
 
     List<Message> voteRsps = this.broadcast(voteRequest);
 
     int commitVotes = (int) voteRsps.stream()
-        .filter(m -> m.getMessageType() == MessageType.VOTE_COMMIT).count();
+        .filter(m -> m.getType() == MessageType.VOTE_COMMIT).count();
 
     Message command = null;
 
     // All replicas vote commit
     if (commitVotes == this.replicas.values().size() && voteCommit) {
       this.logger.log(Logger.GLOBAL_COMMIT);
-      command = new Message(MessageType.GLOBAL_COMMIT);
+      command = new Message("Master", MessageType.GLOBAL_COMMIT);
     } else {
       // timeout or abort
       this.logger.log(Logger.GLOBAL_ABORT);
-      command = new Message(MessageType.GLOBAL_ABORT);
+      command = new Message("Master", MessageType.GLOBAL_ABORT);
     }
 
     command.setTransaction(t);

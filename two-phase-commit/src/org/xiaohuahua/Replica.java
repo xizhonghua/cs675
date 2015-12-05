@@ -63,32 +63,36 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
   @Override
   public Message handleMessage(Message request) throws RemoteException {
 
-    Message response = null;
     Transaction t = request.getTranscation();
+
+    Message response = new Message(this.replicaId);
+    response.setTransaction(t);
 
     System.out.println("Message: " + request);
 
-    switch (request.getMessageType()) {
+    switch (request.getType()) {
     case VOTE_REQUEST:
       // always vote commit
 
-      response = new Message(MessageType.VOTE_COMMIT);
+      response.setType(MessageType.VOTE_COMMIT);
       break;
     case GLOBAL_COMMIT:
       // do the commit
       this.commitTranscation(t);
-      response = new Message(MessageType.ACK);
-      response.setTransaction(t);
+
       break;
     case GLOBAL_ABORT:
-      System.out.println(String.format("[%s] %s", MessageType.VOTE_REQUEST,
-          request.getTranscation()));
-      response = new Message(MessageType.ACK);
-      response.setTransaction(t);
+      // do nothing
       break;
     default:
       // do nothing
       break;
+    }
+
+    try {
+      // delay response
+      Thread.sleep(2000);
+    } catch (InterruptedException e) {
     }
 
     return response;
