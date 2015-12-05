@@ -25,11 +25,13 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
   private Map<String, RemoteReplica> replicas;
   private Set<String> requests;
   private Logger logger;
+  private Config config;
 
-  public Master() throws RemoteException {
+  public Master(Config config) throws RemoteException {
     this.replicas = new HashMap<>();
     this.logger = new Logger("master.log");
     this.requests = new HashSet<>();
+    this.config = config;
   }
 
   @Override
@@ -53,7 +55,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
       }
     }
 
-    this.logger.log(Logger.START_2PC, t);
+    this.logger.log(Event.START_2PC, t);
 
     Message voteRequest = new Message("Master", MessageType.VOTE_REQUEST);
     voteRequest.setTransaction(t);
@@ -67,11 +69,11 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
     // All replicas vote commit
     if (commitVotes == this.replicas.values().size() && voteCommit) {
-      this.logger.log(Logger.GLOBAL_COMMIT, t);
+      this.logger.log(Event.GLOBAL_COMMIT, t);
       command = new Message("Master", MessageType.GLOBAL_COMMIT);
     } else {
       // timeout or abort
-      this.logger.log(Logger.GLOBAL_ABORT, t);
+      this.logger.log(Event.GLOBAL_ABORT, t);
       command = new Message("Master", MessageType.GLOBAL_ABORT);
     }
 
@@ -115,13 +117,23 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
   // helper functions
 
   private RemoteReplica getRandomReplica() {
-    List<String> keys = new ArrayList<String>(this.replicas.keySet());
+    int id = random.nextInt(Config.NUM_OF_REPLICAS);
 
-    String replicaId = keys.get(random.nextInt(keys.size()));
+    System.out.println("replica " + id + " selected!");
 
-    System.out.println("replica " + replicaId + "selected!");
+    return this.getReplica(id);
+  }
 
-    return this.replicas.get(replicaId);
+  private RemoteReplica getReplica(int id) {
+    try {
+      return (RemoteReplica) Naming.lookup(this.config.getReplicaName(id));
+    } catch (Exception e) {
+      System.out.println("Failed to find replica service at "
+          + this.config.getReplicaName(id));
+      e.printStackTrace();
+    }
+
+    return null;
   }
 
   // broadcast a message to all replicas and receive replies
@@ -130,12 +142,17 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     System.out.println("Broadcasting message: " + request);
 
     List<Message> replies = new ArrayList<>();
-    for (RemoteReplica rep : this.replicas.values()) {
+
+    for (int i = 0; i < Config.NUM_OF_REPLICAS; ++i) {
+      RemoteReplica rep = this.getReplica(i);
+      // TODO(zxi) handle unavailable replicas
+      if (rep == null)
+        continue;
       try {
         Message response = rep.handleMessage(request);
         replies.add(response);
       } catch (RemoteException e) {
-        // TODO Auto-generated catch block
+        // TODO(zxi) handle timeout,
         e.printStackTrace();
       }
     }
@@ -143,15 +160,28 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     return replies;
   }
 
+  public void recovery() {
+    Map<Transaction, Set<String>> events = this.logger.parseLog();
+
+    System.out.println(events);
+  }
+
   public static void main(String[] args) {
     try {
       System.setSecurityManager(new SecurityManager());
 
-      RemoteMaster master = new Master();
+      Config config = Config.parseFromArgs(args);
 
-      Naming.rebind(Config.MASTER_SERVICE_NAME, master);
+      Master master = new Master(config);
 
-      System.out.println("Master binds to " + Config.MASTER_SERVICE_NAME);
+      Naming.rebind(config.getMasterName(), master);
+
+      System.out.println("Master binds to " + config.getMasterName());
+
+      // do a recovery from log
+      System.out.println("Master recovering...");
+      master.recovery();
+      System.out.println("Master recovered!");
 
     } catch (Exception e) {
       e.printStackTrace();

@@ -1,18 +1,16 @@
 package org.xiaohuahua;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class Logger {
-
-  public static final String INIT = "INIT";
-  public static final String READY = "READY";
-  public static final String START_2PC = "START_2PC";
-  public static final String VOTE_COMMIT = "VOTE_COMMIT";
-  public static final String GLOBAL_ABORT = "GLOBAL_ABORT";
-  public static final String GLOBAL_COMMIT = "GLOBAL_COMMIT";
+public class Logger {  
 
   private String path;
 
@@ -24,7 +22,7 @@ public class Logger {
   public synchronized void log(String state, Transaction t) {
 
     try (FileWriter fw = new FileWriter(path, true)) {
-      fw.write(state + "," + t.toJSON() + "\n");
+      fw.write(state + " " + t.toJSON() + "\n");
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -32,21 +30,21 @@ public class Logger {
 
   // get the latest state for a given transaction
   public synchronized String getLatestState(Transaction t) {
-    String state = Logger.GLOBAL_ABORT;
+    String state = Event.GLOBAL_ABORT;
 
     try (BufferedReader br = new BufferedReader(new FileReader(path))) {
       while (true) {
-        String[] items = br.readLine().split(",");
+        String[] items = br.readLine().split(" ");
         String curState = items[0];
         Transaction curT = Transaction.fromJSON(items[1]);
         if (curT.getId() != t.getId())
           continue;
         switch (curState) {
-        case GLOBAL_ABORT:
-          state = GLOBAL_ABORT;
+        case Event.GLOBAL_ABORT:
+          state = Event.GLOBAL_ABORT;
           break;
-        case GLOBAL_COMMIT:
-          state = GLOBAL_COMMIT;
+        case Event.GLOBAL_COMMIT:
+          state = Event.GLOBAL_COMMIT;
           break;
         }
       }
@@ -54,5 +52,43 @@ public class Logger {
       e.printStackTrace();
     }
     return state;
+  }
+
+  public synchronized Map<Transaction, Set<String>> parseLog() {
+    Map<Transaction, Set<String>> events = new HashMap<>();
+
+    // log file does not exist
+    File f = new File(path);
+    if (!f.exists() || f.isDirectory())
+      return events;
+
+    try (BufferedReader br = new BufferedReader(new FileReader(path))) {
+      while (true) {
+        String line = br.readLine();
+        if (line == null)
+          break;
+        String[] items = line.split(" ");
+
+        System.out.println(items[0] + "|" + items[1]);
+
+        String curState = items[0];
+        Transaction curT = Transaction.fromJSON(items[1]);
+
+        Set<String> curEvents;
+        if (!events.containsKey(curT)) {
+          curEvents = new HashSet<>();
+          events.put(curT, curEvents);
+        } else {
+          curEvents = events.get(curT);
+        }
+
+        curEvents.add(curState);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    return events;
+
   }
 }

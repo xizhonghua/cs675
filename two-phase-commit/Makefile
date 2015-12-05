@@ -17,21 +17,19 @@ RUN_CMD = java -Djava.security.policy=java.policy \
 		 -Djava.rmi.server.codebase=file:$(SRC) \
 		 -classpath ${CP}
 
-RUN_SOCKET_SERVER = ${RUN_CMD} $(SOCKET_SERVER_CLASS)
-RUN_SOCKET_CLIENT = ${RUN_CMD} ${SOCKET_CLIENT_CLASS}
-RUN_SOCKET_TEST_CLIENT = ${RUN_CMD} ${SOCKET_TEST_CLIENT_CLASS}
+LOCAL_ARGS  = --master localhost --replicas localhost,localhost
+MEDUSA_ARGS = --master localhost --replicas localhost,localhost
 
 
-RUN_RMI_SERVER = ${RUN_CMD} $(RMI_SERVER_CLASS)
-RUN_RMI_CLIENT = ${RUN_CMD} $(RMI_CLIENT_CLASS)
-RUN_RMI_TEST_CLIENT = ${RUN_CMD} $(RMI_TEST_CLIENT_CLASS)
+RUN_MASTER_BASE = ${RUN_CMD} org.xiaohuahua.Master
+RUN_MASTER_LOCAL = ${RUN_MASTER_BASE} ${LOCAL_ARGS}
 
-RUN_REPLICA = ${RUN_CMD} org.xiaohuahua.Replica
-
-RUN_REPLICA_LOCAL_MASTER = ${RUN_REPLICA} localhost
+RUN_REPLICA_BASE = ${RUN_CMD} org.xiaohuahua.Replica
+RUN_REPLICA_LOCAL = ${RUN_REPLICA_BASE} ${LOCAL_ARGS}
 
 RUN_CLIENT_BASE = ${RUN_CMD} org.xiaohuahua.Client
-RUN_CLIENT_LOCAL = ${RUN_CLIENT_BASE} localhost
+RUN_CLIENT_LOCAL = ${RUN_CLIENT_BASE} ${LOCAL_ARGS}
+
 
 .SUFFIXES: .java .class
 
@@ -47,7 +45,7 @@ clean:
 
 backup:
 	tar -zcvf \
-			cs675_p2_zhonghua.tar.gz \
+			cs675_p4_zhonghua.tar.gz \
 			--exclude='*.class' \
 			--disable-copyfile \
 			Makefile \
@@ -60,20 +58,17 @@ backup:
 run_db_test: ${CLASSES}
 	${RUN_CMD} org.xiaohuahua.SqliteKVStore
 
-run_client_test: ${CLASSES}
-	${RUN_CMD} org.xiaohuahua.Client
-
-start_master: ${CLASSES}
-	${RUN_CMD} org.xiaohuahua.Master
+start_master_local: ${CLASSES}
+	${RUN_MASTER_LOCAL}
 
 start_client_local: ${CLASSES}
 	${RUN_CLIENT_LOCAL}
 
-start_replica1_local: ${CLASSES}
-	${RUN_REPLICA_LOCAL_MASTER} rep1
+start_replica0_local: ${CLASSES}
+	${RUN_REPLICA_LOCAL} --repId 0
 
-start_replica2_local: ${CLASSES}
-	${RUN_REPLICA_LOCAL_MASTER} rep2
+start_replica1_local: ${CLASSES}
+	${RUN_REPLICA_LOCAL} --repId 1
 
 clear_log:
 	rm *.log

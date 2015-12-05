@@ -64,8 +64,7 @@ public class Message implements Serializable {
 
   @Override
   public String toString() {
-    return String.format("{Sender = %s, Type = %s, T = %s, D = %s}", this.sender, this.type,
-        this.transaction, this.decision);
+    return Util.toJSON(this);
   }
 
 }

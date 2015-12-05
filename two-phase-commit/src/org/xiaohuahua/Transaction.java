@@ -14,7 +14,7 @@ public class Transaction implements Serializable {
     PUT, DEL
   }
 
-  private static long TransactionId = new Date().getTime();
+  private static long TransactionId = (new Date().getTime() / 1000) % 100000;
 
   private static synchronized long getTransactionId() {
     return ++TransactionId;
@@ -50,8 +50,23 @@ public class Transaction implements Serializable {
 
   @Override
   public String toString() {
-    return String.format("{Id = %d Type = %s Key = %s Value = %s}", this.Id,
-        this.type, this.key, this.value);
+    return this.toJSON();
+  }
+
+  @Override
+  public int hashCode() {
+    return (int) Id;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == null)
+      return false;
+    if (!(o instanceof Transaction))
+      return false;
+    Transaction t = (Transaction) o;
+
+    return this.toJSON().equals(t.toJSON());
   }
 
   public String toJSON() {

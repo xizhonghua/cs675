@@ -10,30 +10,23 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
    * 
    */
   private static final long serialVersionUID = 1L;
-  private RemoteMaster master;
-  private String replicaId;
   private KVStore store;
-  private Logger logger;  
+  private Logger logger;
+  private Config config;
 
-  public Replica(String replicaId, RemoteMaster master) throws RemoteException {
+  public Replica(Config config) throws RemoteException {
 
-    this.replicaId = replicaId;
-    this.master = master;
-    this.logger = new Logger(replicaId + ".log");
+    this.config = config;
 
-    String db_path = "store_" + this.replicaId + ".db";
+    this.logger = new Logger(this.getName() + ".log");
+
+    String db_path = this.getName() + ".db";
 
     this.store = new SqliteKVStore();
     if (!this.store.open(db_path)) {
       System.err.println("Failed to open database " + db_path);
       System.exit(-1);
     }
-
-    this.register();
-  }
-
-  public void register() throws RemoteException {
-    this.master.registerReplica(replicaId, this);
   }
 
   @Override
@@ -60,12 +53,16 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
     }
   }
 
+  private String getName() {
+    return "rep" + this.config.getReplicaId();
+  }
+
   @Override
   public Message handleMessage(Message request) throws RemoteException {
 
     Transaction t = request.getTranscation();
 
-    Message response = new Message(this.replicaId);
+    Message response = new Message(this.getName());
     response.setTransaction(t);
 
     System.out.println("Message: " + request);
@@ -76,28 +73,28 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
       response.setType(MessageType.DECISION_RESPONSE);
 
       String state = this.logger.getLatestState(t);
-      if (state.equals(Logger.GLOBAL_COMMIT))
-        response.setDecision(Logger.GLOBAL_COMMIT);
+      if (state.equals(Event.GLOBAL_COMMIT))
+        response.setDecision(Event.GLOBAL_COMMIT);
       else
-        response.setDecision(Logger.GLOBAL_ABORT);
+        response.setDecision(Event.GLOBAL_ABORT);
       break;
 
     case VOTE_REQUEST:
       // always vote commit
 
-      this.logger.log(Logger.VOTE_COMMIT, t);
+      this.logger.log(Event.VOTE_COMMIT, t);
       // send to master
       response.setType(MessageType.VOTE_COMMIT);
       break;
     case GLOBAL_COMMIT:
-      this.logger.log(Logger.GLOBAL_COMMIT, t);
+      this.logger.log(Event.GLOBAL_COMMIT, t);
       // do the commit
       this.commitTranscation(t);
 
       break;
     case GLOBAL_ABORT:
       // do nothing
-      this.logger.log(Logger.GLOBAL_ABORT, t);
+      this.logger.log(Event.GLOBAL_ABORT, t);
       break;
     default:
       // do nothing
@@ -115,29 +112,22 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
   public static void main(String[] args) {
     if (args.length < 2) {
-      System.out.println("Usage: java " + Replica.class.getName()
-          + " master_address replica_id");
+      System.out
+          .println("Usage: java " + Replica.class.getName() + " --repId id");
+      return;
     }
-
-    String masterAddress = args[0];
-    String replicaId = args[1];
 
     try {
       System.setSecurityManager(new SecurityManager());
 
-      String masterServiceName = "rmi://" + masterAddress + "/"
-          + Config.MASTER_SERVICE_NAME;
-      String replicaServiceName = Config.REPLICA_SERVICE_NAME + "_" + replicaId;
+      Config config = Config.parseFromArgs(args);
 
-      RemoteMaster master = (RemoteMaster) Naming.lookup(masterServiceName);
+      RemoteReplica replica = new Replica(config);
 
-      System.out.println("Master found at " + masterServiceName);
+      Naming.rebind(config.getReplicaName(config.getReplicaId()), replica);
 
-      RemoteReplica replica = new Replica(replicaId, master);
-
-      Naming.rebind(replicaServiceName, replica);
-
-      System.out.println("Replica binds to " + replicaServiceName);
+      System.out.println("Replica binds to "
+          + config.getReplicaName(config.getReplicaId()));
 
     } catch (Exception e) {
       e.printStackTrace();

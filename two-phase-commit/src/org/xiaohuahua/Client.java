@@ -20,15 +20,29 @@ public class Client {
     usages.put("script", "filename");
   }
 
-  private RemoteMaster master;
+  private Config config;
 
-  public Client(RemoteMaster master) {
-    this.master = master;
+  public Client(Config config) {
+    this.config = config;
+  }
+
+  private RemoteMaster getMaster() {
+    RemoteMaster master = null;
+
+    try {
+      master = (RemoteMaster) Naming.lookup(this.config.getMasterName());
+    } catch (Exception e) {
+      System.out.println(
+          "Failed to find Master service at " + this.config.getMasterName());
+      e.printStackTrace();
+    }
+
+    return master;
   }
 
   public void put(String key, String value) {
     try {
-      master.put(key, value);
+      this.getMaster().put(key, value);
     } catch (RemoteException e) {
       e.printStackTrace();
     }
@@ -36,7 +50,7 @@ public class Client {
 
   public String get(String key) {
     try {
-      return master.get(key);
+      return this.getMaster().get(key);
     } catch (RemoteException e) {
       e.printStackTrace();
     }
@@ -45,7 +59,7 @@ public class Client {
 
   public void del(String key) {
     try {
-      master.del(key);
+      this.getMaster().del(key);
     } catch (RemoteException e) {
       e.printStackTrace();
     }
@@ -140,25 +154,8 @@ public class Client {
   }
 
   public static void main(String[] args) {
-
-    if (args.length < 1) {
-      System.out
-          .println("Usage: java " + Client.class.getName() + "[master_server]");
-    }
-
-    String serverAddress = args.length > 1 ? args[1] : "localhost";
-    String fullServiceName = "rmi://" + serverAddress + "/"
-        + Config.MASTER_SERVICE_NAME;
-    RemoteMaster master = null;
-
-    try {
-      master = (RemoteMaster) Naming.lookup(fullServiceName);
-    } catch (Exception e) {
-      System.out.println("Failed to find Master service at " + fullServiceName);
-      e.printStackTrace();
-    }
-
-    Client client = new Client(master);
+    Config config = Config.parseFromArgs(args);
+    Client client = new Client(config);
     client.run();
   }
 
