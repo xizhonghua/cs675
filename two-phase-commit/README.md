@@ -8,24 +8,24 @@
 
 ### Run at Local
 
-* Start RMI registry
+#### Start RMI registry
 ```
 $ ./stop_registry.sh
 $ ./start_registry.sh
 ```
 
-* Start Master
+#### Start Master
 ```
 $ make start_master_local
 ```
 
-* Start Replicas
+#### Start Replicas
 ```
 $ make start_replica0_local
 $ make start_replica1_local
 ```
 
-* Start client
+#### Start client
 ```
 $ make start_client_local
 ```
@@ -40,26 +40,25 @@ $ make start_client_local
 * Replica1: node2
 * Client: any node
 
-#### Commands
 
-* Start RMI registry 
+#### Start RMI registry 
 ```
 $ ./stop_registry.sh
 $ ./start_registry.sh
 ```
 
-* Start Master
+#### Start Master
 ```
 node1 $ make start_master
 ```
 
-* Start Replicas 
+#### Start Replicas 
 ```
 node1 $ make start_replica0
 node2 $ make start_replica1
 ```
 
-* Start client
+#### Start client
 ```
 $ make start_client
 ```
