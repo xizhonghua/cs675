@@ -115,9 +115,8 @@ public class Transaction implements Serializable {
 {\bf SQLiteKVStore} implemented the {\bf KVStore} interface which uses SQLite library to access database.
 
 
-
-\section{Concurrent Control}
-\label{sec:concurrent}
+\section{Concurrency}
+\label{sec:concurrency}
 Both master and replicas are multi-threaded which is inherited from RMI. \\
 Current control is enabled on master node only: transactions with different keys can be performed concurrently, otherwise the later transaction needs to be aborted.
 \begin{minted}[mathescape,
@@ -150,5 +149,23 @@ private void twoPhaseCommit(Transaction t) {
 }
 \end{minted}
 
+\section{Fault Tolerance}
+\subsection{Logging}
+Logging is the key for recovery when the process crashed and restarted.
+Events during 2-Phase-commit are logged in the following format: \\
+{\bf state transaction} \\
+Below shows part of the master.log
+\begin{minted}[fontsize=\footnotesize,]{text}
+START_2PC {"type":"PUT","Id":53201,"key":"a","value":"4"}
+GLOBAL_ABORT {"type":"PUT","Id":53201,"key":"a","value":"4"}
+START_2PC {"type":"PUT","Id":53243,"key":"a","value":"4"}
+GLOBAL_COMMIT {"type":"PUT","Id":53243,"key":"a","value":"4"}
+START_2PC {"type":"PUT","Id":53244,"key":"b","value":"5"}
+GLOBAL_COMMIT {"type":"PUT","Id":53244,"key":"b","value":"5"}
+\end{minted}
+\subsection{Recovering}
+\subsubsection{Master}
+When a master node started, it scans the log, and find all transactions which do not have a GLOBAL state and restart the 2PC.
+\subsubsection{Replica}
 
 \end{document}  

@@ -1,5 +1,6 @@
 package org.xiaohuahua;
 
+import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -24,6 +25,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
   private Set<String> requests;
   private Logger logger;
   private Config config;
+  private boolean recoveryMode = false;
 
   public Master(Config config) throws RemoteException {
     this.logger = new Logger("master.log");
@@ -52,7 +54,13 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
       }
     }
 
-    this.logger.log(Event.START_2PC, t);
+    if (!this.recoveryMode)
+      this.logger.log(Event.START_2PC, t);
+
+    if (!recoveryMode && t.getKey().equals("crash_on_start_2pc")) {
+      System.err.println("panic!");
+      System.exit(0);
+    }
 
     Message voteRequest = new Message("Master", -1, MessageType.VOTE_REQUEST);
     voteRequest.setTransaction(t);
@@ -122,7 +130,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     } catch (Exception e) {
       System.out.println("Failed to find replica service at "
           + this.config.getReplicaName(id));
-      e.printStackTrace();
+      // e.printStackTrace();
     }
 
     return null;
@@ -138,12 +146,15 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     for (int i = 0; i < Config.NUM_OF_REPLICAS; ++i) {
       RemoteReplica rep = this.getReplica(i);
       // TODO(zxi) handle unavailable replicas
-      if (rep == null)
+      if (rep == null) {
         continue;
+      }
       try {
         Message response = rep.handleMessage(request);
         replies.add(response);
         System.out.println("Response" + i + ": " + response);
+      } catch (ConnectException e) {
+        System.out.println("Failed to connect to replica " + i);
       } catch (RemoteException e) {
         // TODO(zxi) handle timeout,
         e.printStackTrace();
@@ -153,10 +164,27 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     return replies;
   }
 
-  public void recovery() {
+  public synchronized void recovery() {
+
+    this.recoveryMode = true;
+
     Map<Transaction, Set<String>> events = this.logger.parseLog();
 
-    System.out.println(events);
+    for (Transaction t : events.keySet()) {
+      Set<String> states = events.get(t);
+
+      // Transaction started
+      if (states.contains(Event.START_2PC)) {
+        // no global state
+        if (!states.contains(Event.GLOBAL_ABORT)
+            || !states.contains(Event.GLOBAL_COMMIT)) {
+          System.out.println("re-try transaction: " + t);
+          this.twoPhaseCommit(t);
+        }
+      }
+    }
+
+    this.recoveryMode = false;
   }
 
   public static void main(String[] args) {

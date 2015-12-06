@@ -67,9 +67,7 @@ public class Logger {
         String line = br.readLine();
         if (line == null)
           break;
-        String[] items = line.split(" ");
-
-        System.out.println(items[0] + "|" + items[1]);
+        String[] items = line.split(" ");      
 
         String curState = items[0];
         Transaction curT = Transaction.fromJSON(items[1]);
