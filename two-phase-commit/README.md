@@ -68,3 +68,13 @@ node2 $ make start_replica1
 ```
 $ make start_client
 ```
+
+### Client Usage
+#### Put
+`>>> put key value`
+#### Get
+`>>> get key`
+#### Del
+`>>> del key`
+#### Run Script
+`>>> script filename`
