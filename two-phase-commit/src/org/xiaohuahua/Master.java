@@ -14,13 +14,13 @@ public class Master extends Server implements RemoteMaster {
   /**
    * 
    */
-  private static final long serialVersionUID = 1L;  
+  private static final long serialVersionUID = 1L;
 
-  private Set<String> requests;    
+  private Set<String> requests;
 
   public Master(Config config) throws RemoteException {
     super(config);
-    
+
     this.logger = new Logger("master.log");
     this.requests = new HashSet<>();
     this.config = config;
@@ -119,9 +119,8 @@ public class Master extends Server implements RemoteMaster {
 
     return this.getReplica(id);
   }
-  
 
-  protected void recoveryImpl() {    
+  protected void recoveryImpl() {
 
     Map<Transaction, Set<String>> events = this.logger.parseLog();
 
@@ -134,6 +133,22 @@ public class Master extends Server implements RemoteMaster {
             && !states.contains(Event.GLOBAL_COMMIT)) {
           System.out.println("no global state, re-try: " + t);
           this.twoPhaseCommit(t);
+        }
+
+        else if ((states.contains(Event.GLOBAL_ABORT)
+            || states.contains(Event.GLOBAL_COMMIT))
+            && !states.contains(Event.ACK)) {
+          // has global decision but no ACK
+          System.out.println("no ACK: " + t);
+
+          // get decision
+          MessageType decision = MessageType
+              .valueOf(this.logger.getLatestState(t));
+
+          Message command = new Message("Master", -1, decision);
+
+          command.setTransaction(t);
+          this.broadcast(command);
         }
       }
     }

@@ -8,5 +8,6 @@ public class Event {
   public static final String COMMITED = "COMITTED";
   public static final String GLOBAL_ABORT = "GLOBAL_ABORT";
   public static final String GLOBAL_COMMIT = "GLOBAL_COMMIT";
+  public static final String ACK = "ACK";
   
 }

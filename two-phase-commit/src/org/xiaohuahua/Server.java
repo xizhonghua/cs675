@@ -67,8 +67,13 @@ public abstract class Server extends UnicastRemoteObject {
       }
       try {
         Message response = rep.handleMessage(request);
-        if (response != null)
+        if (response != null) {
           replies.add(response);
+          // log ACK events
+          if (response.getType() == MessageType.ACK) {
+            this.logger.log(Event.ACK, response.getTranscation());
+          }
+        }
         System.out.println("Response" + i + ": " + response);
       } catch (ConnectException e) {
         System.out.println("Failed to connect to replica " + i);
@@ -81,7 +86,7 @@ public abstract class Server extends UnicastRemoteObject {
     return replies;
   }
 
-  public final synchronized void recovery() {      
+  public final synchronized void recovery() {
     this.recoveryMode = true;
     System.out.println("recovering...");
 
@@ -89,7 +94,7 @@ public abstract class Server extends UnicastRemoteObject {
 
     this.recoveryMode = false;
     System.out.println("recovered!");
-    
+
   }
 
   protected abstract void recoveryImpl();
