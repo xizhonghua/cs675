@@ -1,6 +1,11 @@
 # CS 675 Course Project #4: Two-Phase Commit: A simple transaction system
 Zhonghua Xi, Dec 2015
 
+### Dependencies
+```
+sqlite-jdbc-3.8.11.2
+gson-2.5
+```
 
 ### Build
 ```
