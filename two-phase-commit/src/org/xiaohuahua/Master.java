@@ -3,31 +3,26 @@ package org.xiaohuahua;
 import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 
 import org.xiaohuahua.Transaction.TransactionType;
 
-public class Master extends UnicastRemoteObject implements RemoteMaster {
+public class Master extends Server implements RemoteMaster {
 
   /**
    * 
    */
-  private static final long serialVersionUID = 1L;
-  private static final Random random = new Random(new Date().getTime());
+  private static final long serialVersionUID = 1L;  
 
-  private Set<String> requests;
-  private Logger logger;
-  private Config config;
-  private boolean recoveryMode = false;
+  private Set<String> requests;    
 
   public Master(Config config) throws RemoteException {
+    super(config);
+    
     this.logger = new Logger("master.log");
     this.requests = new HashSet<>();
     this.config = config;
@@ -42,7 +37,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     return value;
   }
 
-  private void twoPhaseCommit(Transaction t) {
+  private boolean twoPhaseCommit(Transaction t) {
 
     boolean voteCommit = false;
 
@@ -57,7 +52,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     if (!this.recoveryMode)
       this.logger.log(Event.START_2PC, t);
 
-    if (!recoveryMode && t.getKey().equals("crash_on_start_2pc")) {
+    if (!recoveryMode && t.getKey().equals("master_crash_after_start_2pc")) {
       System.err.println("panic!");
       System.exit(0);
     }
@@ -92,26 +87,29 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
         this.requests.remove(t.getKey());
       }
     }
+
+    // committed
+    return command.getType() == MessageType.GLOBAL_COMMIT;
   }
 
   @Override
-  public void put(String key, String value) throws RemoteException {
+  public boolean put(String key, String value) throws RemoteException {
 
     System.out.println("put(" + key + "," + value + ")");
 
     Transaction t = new Transaction(TransactionType.PUT, key, value);
 
-    this.twoPhaseCommit(t);
+    return this.twoPhaseCommit(t);
   }
 
   @Override
-  public void del(String key) throws RemoteException {
+  public boolean del(String key) throws RemoteException {
 
     System.out.println("del(" + key + ")");
 
     Transaction t = new Transaction(TransactionType.DEL, key, null);
 
-    this.twoPhaseCommit(t);
+    return this.twoPhaseCommit(t);
   }
 
   // helper functions
@@ -123,18 +121,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
     return this.getReplica(id);
   }
-
-  private RemoteReplica getReplica(int id) {
-    try {
-      return (RemoteReplica) Naming.lookup(this.config.getReplicaName(id));
-    } catch (Exception e) {
-      System.out.println("Failed to find replica service at "
-          + this.config.getReplicaName(id));
-      // e.printStackTrace();
-    }
-
-    return null;
-  }
+  
 
   // broadcast a message to all replicas and receive replies
   private List<Message> broadcast(Message request) {
@@ -173,12 +160,11 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
     for (Transaction t : events.keySet()) {
       Set<String> states = events.get(t);
 
-      // Transaction started
       if (states.contains(Event.START_2PC)) {
-        // no global state
+        // 2pc started but no global state
         if (!states.contains(Event.GLOBAL_ABORT)
             || !states.contains(Event.GLOBAL_COMMIT)) {
-          System.out.println("re-try transaction: " + t);
+          System.out.println("no global state, re-try: " + t);
           this.twoPhaseCommit(t);
         }
       }
@@ -197,7 +183,7 @@ public class Master extends UnicastRemoteObject implements RemoteMaster {
 
       Naming.rebind(config.getMasterName(), master);
 
-      System.out.println("Master binds to " + config.getMasterName());
+      System.out.println("Master bound to " + config.getMasterName());
 
       // do a recovery from log
       System.out.println("Master recovering...");

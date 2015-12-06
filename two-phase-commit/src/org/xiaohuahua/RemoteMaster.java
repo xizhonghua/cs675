@@ -8,7 +8,7 @@ public interface RemoteMaster extends Remote {
   // Store Methods
   public String get(String key) throws RemoteException;
 
-  public void put(String key, String value) throws RemoteException;
+  public boolean put(String key, String value) throws RemoteException;
 
-  public void del(String key) throws RemoteException;
+  public boolean del(String key) throws RemoteException;
 }

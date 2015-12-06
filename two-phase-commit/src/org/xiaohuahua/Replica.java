@@ -2,21 +2,20 @@ package org.xiaohuahua;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
+import java.util.Map;
+import java.util.Set;
 
-public class Replica extends UnicastRemoteObject implements RemoteReplica {
+public class Replica extends Server implements RemoteReplica {
 
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
   private KVStore store;
-  private Logger logger;
-  private Config config;
 
   public Replica(Config config) throws RemoteException {
 
-    this.config = config;
+    super(config);
 
     this.logger = new Logger(this.getName() + ".log");
 
@@ -62,7 +61,7 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
     Transaction t = request.getTranscation();
 
-    //TODO(zxi) update message types
+    // TODO(zxi) update message types
     Message response = new Message("Replica", this.config.getReplicaId(),
         MessageType.ACK);
     response.setTransaction(t);
@@ -105,13 +104,25 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
 
     try {
       // delay response
-      Thread.sleep(1000);
+      Thread.sleep(500);
     } catch (InterruptedException e) {
     }
 
     System.out.println("Respone: " + response);
 
     return response;
+  }
+
+  public synchronized void recovery() {
+
+    this.recoveryMode = true;
+
+    Map<Transaction, Set<String>> events = this.logger.parseLog();
+
+    // TODO(zxi)
+    // recovery
+
+    this.recoveryMode = false;
   }
 
   public static void main(String[] args) {
@@ -131,7 +142,7 @@ public class Replica extends UnicastRemoteObject implements RemoteReplica {
       Naming.rebind(config.getReplicaName(config.getReplicaId()), replica);
 
       System.out.println(
-          "Replica binds to " + config.getReplicaName(config.getReplicaId()));
+          "Replica bound to " + config.getReplicaName(config.getReplicaId()));
 
     } catch (Exception e) {
       e.printStackTrace();
