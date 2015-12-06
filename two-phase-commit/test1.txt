@@ -1,0 +1,12 @@
+put a 10
+get a
+del a
+put b 3
+get b
+put b 5
+get b
+put c 3
+get c
+get b
+get a
+del b
