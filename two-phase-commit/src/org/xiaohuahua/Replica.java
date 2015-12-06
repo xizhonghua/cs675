@@ -59,9 +59,14 @@ public class Replica extends Server implements RemoteReplica {
   @Override
   public Message handleMessage(Message request) throws RemoteException {
 
+    // ignore message from itself
+    if (request.getSenderType().equals("Replica")
+        && request.getSenderId() == this.config.getReplicaId()) {
+      return null;
+    }
+
     Transaction t = request.getTranscation();
 
-    // TODO(zxi) update message types
     Message response = new Message("Replica", this.config.getReplicaId(),
         MessageType.ACK);
     response.setTransaction(t);
@@ -104,7 +109,7 @@ public class Replica extends Server implements RemoteReplica {
 
     try {
       // delay response
-      Thread.sleep(500);
+      Thread.sleep(random.nextInt(500) + 100);
     } catch (InterruptedException e) {
     }
 
@@ -113,16 +118,27 @@ public class Replica extends Server implements RemoteReplica {
     return response;
   }
 
-  public synchronized void recovery() {
-
-    this.recoveryMode = true;
+  protected void recoveryImpl() {
 
     Map<Transaction, Set<String>> events = this.logger.parseLog();
 
-    // TODO(zxi)
-    // recovery
+    for (Transaction t : events.keySet()) {
+      Set<String> states = events.get(t);
 
-    this.recoveryMode = false;
+      if (states.contains(Event.VOTE_COMMIT)) {
+        // vote commit, no decision
+        if (!states.contains(Event.GLOBAL_ABORT)
+            || !states.contains(Event.GLOBAL_COMMIT)) {
+
+          // send decision request to other replicas
+          Message decisionRequest = new Message("Replica",
+              this.config.getReplicaId(), MessageType.DECISION_REQUEST);
+
+          this.broadcast(decisionRequest);
+
+        }
+      }
+    }
   }
 
   public static void main(String[] args) {
@@ -137,9 +153,11 @@ public class Replica extends Server implements RemoteReplica {
 
       Config config = Config.parseFromArgs(args);
 
-      RemoteReplica replica = new Replica(config);
+      Replica replica = new Replica(config);
 
       Naming.rebind(config.getReplicaName(config.getReplicaId()), replica);
+
+      replica.recovery();
 
       System.out.println(
           "Replica bound to " + config.getReplicaName(config.getReplicaId()));

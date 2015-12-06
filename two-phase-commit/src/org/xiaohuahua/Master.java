@@ -1,9 +1,7 @@
 package org.xiaohuahua;
 
-import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -123,37 +121,7 @@ public class Master extends Server implements RemoteMaster {
   }
   
 
-  // broadcast a message to all replicas and receive replies
-  private List<Message> broadcast(Message request) {
-
-    System.out.println("Broadcasting message: " + request);
-
-    List<Message> replies = new ArrayList<>();
-
-    for (int i = 0; i < Config.NUM_OF_REPLICAS; ++i) {
-      RemoteReplica rep = this.getReplica(i);
-      // TODO(zxi) handle unavailable replicas
-      if (rep == null) {
-        continue;
-      }
-      try {
-        Message response = rep.handleMessage(request);
-        replies.add(response);
-        System.out.println("Response" + i + ": " + response);
-      } catch (ConnectException e) {
-        System.out.println("Failed to connect to replica " + i);
-      } catch (RemoteException e) {
-        // TODO(zxi) handle timeout,
-        e.printStackTrace();
-      }
-    }
-
-    return replies;
-  }
-
-  public synchronized void recovery() {
-
-    this.recoveryMode = true;
+  protected void recoveryImpl() {    
 
     Map<Transaction, Set<String>> events = this.logger.parseLog();
 
@@ -169,8 +137,6 @@ public class Master extends Server implements RemoteMaster {
         }
       }
     }
-
-    this.recoveryMode = false;
   }
 
   public static void main(String[] args) {
