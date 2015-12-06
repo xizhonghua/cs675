@@ -1,10 +1,16 @@
 # CS 675 Course Project #4: Two-Phase Commit: A simple transaction system
-#### Author: Zhonghua Xi 
-#### Date: Dec 2015
+Zhonghua Xi, Dec 2015
 
+### Dependencies
+```
+sqlite-jdbc-3.8.11.2
+gson-2.5
+```
 
 ### Build
-`$ make`
+```
+$ make
+```
 
 ### Run at Local
 
@@ -62,3 +68,13 @@ node2 $ make start_replica1
 ```
 $ make start_client
 ```
+
+### Client Usage
+#### Put
+`>>> put key value`
+#### Get
+`>>> get key`
+#### Del
+`>>> del key`
+#### Run Script
+`>>> script filename`
