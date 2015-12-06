@@ -1,10 +1,11 @@
 # CS 675 Course Project #4: Two-Phase Commit: A simple transaction system
-#### Author: Zhonghua Xi 
-#### Date: Dec 2015
+Zhonghua Xi, Dec 2015
 
 
 ### Build
-`$ make`
+```
+$ make
+```
 
 ### Run at Local
 
