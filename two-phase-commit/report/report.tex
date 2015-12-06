@@ -171,5 +171,9 @@ When a master node started, it scans the log, and for a transaction:
 \item has a GLOBAL state without any ACK response, resend the decision to all replicas.
 \end{enumerate}
 \subsubsection{Replica}
-
+When a replica node started, it scans the log, and for a transaction:
+\begin{enumerate}
+\item has a VOTE\_COMMIT state: request decision from other replicas and handle properly.
+%\item
+\end{enumerate}
 \end{document}  
