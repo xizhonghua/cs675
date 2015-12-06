@@ -21,22 +21,31 @@ public class Logger {
   // log the state for a given transaction
   public synchronized void log(String state, Transaction t) {
 
+    String logContent = state + " " + t.toJSON() + "\n"; 
+    
     try (FileWriter fw = new FileWriter(path, true)) {
-      fw.write(state + " " + t.toJSON() + "\n");
+      fw.write(logContent);
     } catch (IOException e) {
       e.printStackTrace();
     }
+    
+    System.out.print("Logger::log Content: " + logContent);
   }
 
   // get the latest state for a given transaction
   public synchronized String getLatestState(Transaction t) {
     String state = Event.GLOBAL_ABORT;
+    
+    System.out.print("Logger::getLatestState T: " + t);
 
     try (BufferedReader br = new BufferedReader(new FileReader(path))) {
       while (true) {
-        String[] items = br.readLine().split(" ");
+        String line = br.readLine();
+        if(line==null) break;
+        String[] items = line.split(" ");
         String curState = items[0];
-        Transaction curT = Transaction.fromJSON(items[1]);
+        Transaction curT = Transaction.fromJSON(items[1]);        
+        
         if (curT.getId() != t.getId())
           continue;
         switch (curState) {
@@ -51,6 +60,9 @@ public class Logger {
     } catch (IOException e) {
       e.printStackTrace();
     }
+    
+    System.out.println(" State: " + state);
+    
     return state;
   }
 

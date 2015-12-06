@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.util.HashMap;
@@ -42,7 +43,13 @@ public class Client {
 
   public void put(String key, String value) {
     try {
-      this.getMaster().put(key, value);
+      if (this.getMaster().put(key, value)) {
+        System.out.println("Committed!");
+      } else {
+        System.out.println("Failed to commit!");
+      }
+    } catch (ConnectException e) {
+      System.out.println("Failed to connect to Master!");
     } catch (RemoteException e) {
       e.printStackTrace();
     }
@@ -51,6 +58,8 @@ public class Client {
   public String get(String key) {
     try {
       return this.getMaster().get(key);
+    } catch (ConnectException e) {
+      System.out.println("Failed to connect to Master!");
     } catch (RemoteException e) {
       e.printStackTrace();
     }
@@ -59,7 +68,13 @@ public class Client {
 
   public void del(String key) {
     try {
-      this.getMaster().del(key);
+      if (this.getMaster().del(key)) {
+        System.out.println("Committed!");
+      } else {
+        System.out.println("Failed to commit!");
+      }
+    } catch (ConnectException e) {
+      System.out.println("Failed to connect to Master!");
     } catch (RemoteException e) {
       e.printStackTrace();
     }

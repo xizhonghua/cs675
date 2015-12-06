@@ -131,7 +131,7 @@ public class Master extends Server implements RemoteMaster {
       if (states.contains(Event.START_2PC)) {
         // 2pc started but no global state
         if (!states.contains(Event.GLOBAL_ABORT)
-            || !states.contains(Event.GLOBAL_COMMIT)) {
+            && !states.contains(Event.GLOBAL_COMMIT)) {
           System.out.println("no global state, re-try: " + t);
           this.twoPhaseCommit(t);
         }
@@ -151,10 +151,7 @@ public class Master extends Server implements RemoteMaster {
 
       System.out.println("Master bound to " + config.getMasterName());
 
-      // do a recovery from log
-      System.out.println("Master recovering...");
       master.recovery();
-      System.out.println("Master recovered!");
 
     } catch (Exception e) {
       e.printStackTrace();

@@ -2,6 +2,9 @@ package org.xiaohuahua;
 
 import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -59,9 +62,11 @@ public class Replica extends Server implements RemoteReplica {
   @Override
   public Message handleMessage(Message request) throws RemoteException {
 
+    System.out.println("Request: " + request);
+
     // ignore message from itself
-    if (request.getSenderType().equals("Replica")
-        && request.getSenderId() == this.config.getReplicaId()) {
+    if (request.getSenderId() == this.config.getReplicaId()) {
+      System.out.println("ignored message from myself!");
       return null;
     }
 
@@ -70,8 +75,6 @@ public class Replica extends Server implements RemoteReplica {
     Message response = new Message("Replica", this.config.getReplicaId(),
         MessageType.ACK);
     response.setTransaction(t);
-
-    System.out.println("Request: " + request);
 
     switch (request.getType()) {
 
@@ -87,15 +90,15 @@ public class Replica extends Server implements RemoteReplica {
 
     case VOTE_REQUEST:
       // always vote commit
-
       this.logger.log(Event.VOTE_COMMIT, t);
       // send to master
       response.setType(MessageType.VOTE_COMMIT);
       break;
-    case GLOBAL_COMMIT:
-      this.logger.log(Event.GLOBAL_COMMIT, t);
+    case GLOBAL_COMMIT:      
       // do the commit
       this.commitTranscation(t);
+      // log state
+      this.logger.log(Event.GLOBAL_COMMIT, t);
 
       break;
     case GLOBAL_ABORT:
@@ -122,19 +125,37 @@ public class Replica extends Server implements RemoteReplica {
 
     Map<Transaction, Set<String>> events = this.logger.parseLog();
 
-    for (Transaction t : events.keySet()) {
+    List<Transaction> trans = new ArrayList<>(events.keySet());
+
+    // ordered by tranId
+    Collections.sort(trans);
+
+    for (Transaction t : trans) {
       Set<String> states = events.get(t);
 
       if (states.contains(Event.VOTE_COMMIT)) {
         // vote commit, no decision
         if (!states.contains(Event.GLOBAL_ABORT)
-            || !states.contains(Event.GLOBAL_COMMIT)) {
+            && !states.contains(Event.GLOBAL_COMMIT)) {
 
-          // send decision request to other replicas
+          // send decision requests to other replicas
           Message decisionRequest = new Message("Replica",
               this.config.getReplicaId(), MessageType.DECISION_REQUEST);
+          decisionRequest.setTransaction(t);
 
-          this.broadcast(decisionRequest);
+          // get decisions for the transaction
+          List<Message> replies = this.broadcast(decisionRequest);
+
+          for (Message reply : replies) {
+            if (reply.getDecision().equals(Event.GLOBAL_ABORT)) {
+              this.logger.log(Event.GLOBAL_ABORT, t);
+              break;
+            }
+            if (reply.getDecision().equals(Event.GLOBAL_COMMIT)) {
+              this.commitTranscation(t);
+              this.logger.log(Event.GLOBAL_COMMIT, t);
+            }
+          }
 
         }
       }

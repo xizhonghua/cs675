@@ -3,7 +3,7 @@ package org.xiaohuahua;
 import java.io.Serializable;
 import java.util.Date;
 
-public class Transaction implements Serializable {
+public class Transaction implements Serializable, Comparable<Transaction> {
 
   /**
    * 
@@ -75,5 +75,10 @@ public class Transaction implements Serializable {
 
   public static Transaction fromJSON(String json) {
     return Util.fromJSON(json, Transaction.class);
+  }
+
+  @Override
+  public int compareTo(Transaction o) {
+    return Long.compare(this.Id, o.Id);
   }
 }
