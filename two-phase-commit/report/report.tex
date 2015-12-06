@@ -1,0 +1,154 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex		
+\usepackage{amssymb}
+\usepackage{minted}
+\usemintedstyle{vs}
+
+
+\title{CS 675 Course Project \#4: Two-Phase Commit: A simple transaction system}
+\author{Zhonghua Xi}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+\maketitle
+%\section{}
+%\subsection{}
+
+\section{Structure}
+\subsection{Main Interfaces}
+\subsubsection{RemoteMaster}
+RemoteMaster is invoked by clients.
+
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+			   fontsize=\footnotesize,
+               gobble=0,
+               frame=lines,
+               framesep=2mm]{java}
+public interface RemoteMaster extends Remote {
+  public String get(String key) throws RemoteException;
+  public void put(String key, String value) throws RemoteException;
+  public void del(String key) throws RemoteException;
+}
+\end{minted}
+
+\subsubsection{RemoteReplica}
+RemoteReplica is invoked by master/other replicas.
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+			   fontsize=\footnotesize,
+               gobble=0,
+               frame=lines,
+               framesep=2mm]{java}
+public interface RemoteReplica extends Remote {
+  public String get(String key) throws RemoteException;
+  public Message handleMessage(Message request) throws RemoteException;
+}
+\end{minted}
+
+\subsubsection{KVStore}
+KVStore is interface for the durable key/value store.
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+			   fontsize=\footnotesize,
+               gobble=0,
+               frame=lines,
+               framesep=2mm]{java}
+public interface KVStore {  
+  public boolean open(String path);
+  public void put(String key, String value);
+  public void del(String key);
+  public String get(String key);
+}
+\end{minted}
+
+\subsection{Main Classes}
+\subsubsection{Message Class}
+Message is the main class that is passed between master/replica, replica/replica.
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+			   fontsize=\footnotesize,
+               gobble=0,
+               frame=lines,
+               framesep=2mm]{java}               
+public class Message implements Serializable {
+  public enum MessageType {
+    VOTE_REQUEST, VOTE_COMMIT, GLOBAL_ABORT, GLOBAL_COMMIT, ACK, 
+    DECISION_REQUEST, DECISION_RESPONSE
+  }
+  private MessageType type;
+  private Transaction transaction;
+  private String senderType;
+  private String decision;
+  private int senderId;
+\end{minted}
+
+\subsubsection{Transaction Class}
+An instance of Transaction represents a transaction that is going to be committed.
+Every transaction has a unique id in the system.
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+			   fontsize=\footnotesize,
+               gobble=0,
+               frame=lines,
+               framesep=2mm]{java}
+public class Transaction implements Serializable {
+  public enum TransactionType { PUT, DEL }  
+  private TransactionType type;
+  private long Id;
+  private String key;
+  private String value;
+}
+\end{minted}
+
+\subsection{SQLiteKVStore Class}
+{\bf SQLiteKVStore} implemented the {\bf KVStore} interface which uses SQLite library to access database.
+
+
+
+\section{Concurrent Control}
+\label{sec:concurrent}
+Both master and replicas are multi-threaded which is inherited from RMI. \\
+Current control is enabled on master node only: transactions with different keys can be performed concurrently, otherwise the later transaction needs to be aborted.
+\begin{minted}[mathescape,
+               linenos,
+               numbersep=5pt,
+			   fontsize=\footnotesize,
+               gobble=0,
+               frame=lines,
+               framesep=2mm]{java}               
+private Set<String> requests = new HashSet<>();
+
+private void twoPhaseCommit(Transaction t) {
+
+    boolean voteCommit = false;
+
+    synchronized (this.requests) {
+      if (!requests.contains(t.getKey())) {
+        requests.add(t.getKey());
+        voteCommit = true;
+      }
+    }
+    
+    ...
+    
+    if (voteCommit) {
+      synchronized (this.requests) {
+        this.requests.remove(t.getKey());
+      }
+    }
+}
+\end{minted}
+
+
+\end{document}  
