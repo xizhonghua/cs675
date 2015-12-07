@@ -1,10 +1,12 @@
 put b 10
 get b
 del b
-put b
+get b
+put b 10
+get b
 put c 5
+get c
 put a 3
 get a
+del a
 get a
-get b
-del c

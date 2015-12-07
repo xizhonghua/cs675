@@ -176,4 +176,26 @@ When a replica node started, it scans the log, and for a transaction:
 \item has a VOTE\_COMMIT state: request decision from other replicas and handle properly.
 %\item
 \end{enumerate}
+
+\subsection{Client Interface}
+\subsubsection{Get}
+If master or the selected replica to perform the get operation failed, client will get a remote exception.
+\subsubsection{Put/Del}
+\begin{enumerate}
+\item If master failed, client will get a remote exception
+\item If any of the replica failed or another client requested to write on the same key, the transaction will be aborted, the method will return false which means the transaction is failed to commit.
+\end{enumerate}
+
+\section{Testing}
+The following test cases are designed and tested.
+\begin{enumerate}
+\item Get a key which does not exist, return null.
+\item Selected replica failed, remote exception.
+\item Clients write on different keys concurrently. Allowed.
+\item Clients write on the same key during 2PC. The later one is aborted.
+\item Master crashed after get a write request, will restart the 2PC during recovering.
+\item Master crashed after send the global decision but has not receive any response, will resend the decision during recovering.
+\item A replica crashed before voting, master did not receive all responses, transaction aborted.
+\item A replica crashed after voting, does not receive global decision. Once recovered, it queries global decisions on voted transactions which do not have global decisions from other replicas and process the transactions accordingly.
+\end{enumerate}
 \end{document}  
